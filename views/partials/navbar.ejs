@@ -1,0 +1,172 @@
+<!-- <nav class="navbar navbar-expand-lg navbar-dark bg-primary-gradient shadow-sm">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center" href="/">
+      <i class="bi bi-heart-pulse fs-4 me-2"></i>
+      <span class="fw-bold">Nudge</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item mx-1">
+          <a class="nav-link d-flex align-items-center" href="/dashboard">
+            <i class="bi bi-speedometer2 me-2"></i>
+            Dashboard
+          </a>
+        </li>
+        <li class="nav-item mx-1">
+          <a class="nav-link d-flex align-items-center" href="/profile">
+            <i class="bi bi-person-circle me-2"></i>
+            Profile
+          </a>
+        </li>
+        <li class="nav-item mx-1">
+          <a class="nav-link d-flex align-items-center" href="/health/calculators">
+            <i class="bi bi-calculator me-2"></i>
+            Calculators
+          </a>
+        </li>
+        <li class="nav-item mx-1">
+          <a class="nav-link d-flex align-items-center" href="/weight">
+            <i class="bi bi-clipboard2-data me-2"></i>
+            Weight Log
+          </a>
+        </li>
+        <li class="nav-item mx-1">
+          <a class="nav-link d-flex align-items-center" href="/weightShow">
+            <i class="bi bi-clipboard2-data me-2"></i>
+            Weight Track
+          </a>
+        </li>
+      </ul>
+      <ul class="navbar-nav">
+        <li class="nav-item mx-1">
+          <a class="nav-link d-flex align-items-center" href="/logout">
+            <i class="bi bi-box-arrow-right me-2"></i>
+            Logout
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav> -->
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary-gradient shadow-sm">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center" href="/">
+      <i class="bi bi-heart-pulse fs-4 me-2"></i>
+      <span class="fw-bold">Nudge</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item mx-1">
+          <a class="nav-link d-flex align-items-center" href="/dashboard">
+            <i class="bi bi-speedometer2 me-2"></i>
+            Dashboard
+          </a>
+        </li>
+        <li class="nav-item mx-1">
+          <a class="nav-link d-flex align-items-center" href="/profile">
+            <i class="bi bi-person-circle me-2"></i>
+            Profile
+          </a>
+        </li>
+        <li class="nav-item mx-1">
+          <a class="nav-link d-flex align-items-center" href="/health/calculators">
+            <i class="bi bi-calculator me-2"></i>
+            Calculators
+          </a>
+        </li>
+
+        <!-- Weight Dropdown -->
+        <li class="nav-item dropdown mx-1">
+          <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="weightDropdown" role="button"
+            data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-clipboard2-data me-2"></i>
+            Weight
+          </a>
+          <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="weightDropdown">
+            <li>
+              <a class="dropdown-item" href="/weight">Weight Log</a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="/weightShow">Weight Track</a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+
+      <ul class="navbar-nav">
+        <li class="nav-item mx-1">
+          <a class="nav-link d-flex align-items-center" href="/logout">
+            <i class="bi bi-box-arrow-right me-2"></i>
+            Logout
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+
+<style>
+  :root {
+    --primary-blue: #0d6efd;
+    --dark-blue: #0853c5;
+    --nav-gradient: linear-gradient(135deg, var(--primary-blue) 0%, var(--dark-blue) 100%);
+  }
+
+  .navbar {
+    padding: 0.5rem 0;
+    background: var(--nav-gradient);
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+  }
+
+  .nav-link {
+    color: rgba(255, 255, 255, 0.85) !important;
+    padding: 0.75rem 1.25rem !important;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+  }
+
+  .nav-link:hover {
+    color: white !important;
+    background-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+  }
+
+  .nav-link.active {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white !important;
+  }
+
+  .navbar-brand {
+    font-size: 1.25rem;
+    letter-spacing: 0.5px;
+    transition: transform 0.2s ease;
+  }
+
+  .navbar-brand:hover {
+    transform: scale(1.02);
+  }
+
+  @media (max-width: 992px) {
+    .nav-item {
+      margin: 0.25rem 0;
+    }
+
+    .nav-link {
+      border-radius: 0.25rem;
+    }
+  }
+</style>
+
+<!-- Include Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">

@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <style>
+    :root {
+      --primary-blue: #0d6efd;
+      --secondary-blue: #e3f2fd;
+    }
+
+    body {
+      background-color: #f8f9fa;
+    }
+
+    .dashboard-card {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s;
+    }
+
+    .dashboard-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .progress-bar {
+      background-color: var(--primary-blue);
+    }
+
+    .workout-table-card {
+      background: #fafdff;
+      border-radius: 18px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+      padding: 2rem 1.5rem 1.5rem 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .workout-table thead th {
+      background: linear-gradient(90deg, #4f8cff 0%, #6dd5ed 100%);
+      color: #fff;
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+      font-size: 1.08rem;
+      letter-spacing: 0.5px;
+      border-bottom: none;
+    }
+
+    .workout-table tbody tr {
+      transition: background 0.2s;
+    }
+
+    .workout-table tbody tr:hover {
+      background: #e3f0ff;
+    }
+
+    .workout-table {
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .workout-note {
+      background: #e3f7ff;
+      border-left: 5px solid #4f8cff;
+      border-radius: 10px;
+      padding: 1rem 1.5rem;
+      margin-top: 1.5rem;
+      color: #22577a;
+      font-size: 1rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .workout-note i {
+      color: #4f8cff;
+      font-size: 1.3rem;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+
+<body>
+  <%- include('partials/navbar') %>
+
+    <div class="container py-5">
+      <!-- Welcome Card -->
+      <div class="dashboard-card p-4 mb-4">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <h1 class="h3 mb-0">Welcome back, <%= user.name %>! <i class="bi bi-emoji-smile-fill text-warning"></i></h1>
+            <% let progressPercent = (user.weight && user.goal_weight) ? Math.abs((user.weight - user.goal_weight)/user.weight * 100) : 0; %>
+            <% if (user.weight && user.goal_weight) { %>
+              <div class="mt-3">
+                <h5 class="mb-2"><i class="bi bi-speedometer2 me-2"></i>Progress</h5>
+                <div class="d-flex align-items-center">
+                  <div class="progress flex-grow-1" style="height: 25px;">
+                    <div class="progress-bar" role="progressbar"
+                      style="width: <%= typeof progressPercent === 'number' && !isNaN(progressPercent) ? progressPercent : 0 %>%;"
+                      aria-valuenow="<%= Math.abs(user.weight - user.goal_weight) %>" aria-valuemin="0"
+                      aria-valuemax="<%= user.weight %>">
+                    </div>
+                  </div>
+                  <span class="ms-3 fw-bold text-primary">
+                    <%= Math.abs(user.weight - user.goal_weight) %> kg to go
+                  </span>
+                </div>
+              </div>
+              <% } else { %>
+                <div class="alert alert-info mt-3">
+                  <i class="bi bi-info-circle-fill me-2"></i>Update your profile to set weight and goal!
+                </div>
+                <% } %>
+          </div>
+          <i class="bi bi-person-circle fs-1 text-primary"></i>
+        </div>
+      </div>
+
+      <!-- Your Progress Section -->
+      <div class="dashboard-card p-4 mb-4" style="background-color: #f0f8ff;">
+        <h2 class="h4 mb-4"><i class="bi bi-bar-chart-line-fill me-2 text-primary"></i>Your Progress</h2>
+        <div class="row g-4">
+          <!-- Calendar -->
+          <div class="col-lg-4">
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden border">
+              <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                <h3 class="h6 mb-0 fw-semibold text-primary">Calendar</h3>
+                <div class="d-flex align-items-center">
+                  <button id="progressPrevMonth" class="btn btn-sm btn-light me-2" aria-label="Previous month"><i class="bi bi-chevron-left"></i></button>
+                  <span id="progressCurrentMonth" class="text-secondary"></span>
+                  <button id="progressNextMonth" class="btn btn-sm btn-light ms-2" aria-label="Next month"><i class="bi bi-chevron-right"></i></button>
+                </div>
+              </div>
+              <div class="p-3">
+                <div class="row g-1 mb-2">
+                  <% ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(day => { %>
+                    <div class="col text-center text-xs fw-medium text-secondary py-1"><%= day %></div>
+                  <% }); %>
+                </div>
+                <div class="row g-1" id="progressCalendarDays"></div>
+              </div>
+              <div class="p-3 border-top bg-light">
+                <div class="fw-medium text-secondary mb-2">Selected Date: <span id="progressSelectedDateDisplay"></span></div>
+                <div class="d-flex align-items-center text-sm text-secondary">
+                  <div class="rounded-circle me-2" style="width:14px;height:14px;background:#20c997;"></div>
+                  <span>Tracked day</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Logs and Summary -->
+          <div class="col-lg-8">
+            <div class="mb-3 d-flex flex-wrap gap-2 align-items-center justify-content-between">
+              <div class="w-100 d-flex justify-content-center">
+                <div class="btn-group" role="group">
+                  <button id="progressMealsTab" class="btn btn-outline-success active" type="button"><i class="bi bi-egg-fried me-1"></i>Meals</button>
+                  <button id="progressWorkoutsTab" class="btn btn-outline-primary" type="button"><i class="bi bi-bicycle me-1"></i>Workouts</button>
+                </div>
+              </div>
+            </div>
+            <div class="mb-3 p-3 bg-light rounded">
+              <h5 class="mb-3 text-secondary">Daily Summary for <span id="progressSummaryDate"></span></h5>
+              <div class="row g-3">
+                <div class="col-6 col-md-3"><div class="bg-white p-2 rounded text-center"><div class="text-muted small">Calories In</div><div class="fw-bold text-success" id="progressCaloriesIn">0</div></div></div>
+                <div class="col-6 col-md-3"><div class="bg-white p-2 rounded text-center"><div class="text-muted small">Calories Burned</div><div class="fw-bold text-primary" id="progressCaloriesBurned">0</div></div></div>
+                <div class="col-6 col-md-3"><div class="bg-white p-2 rounded text-center"><div class="text-muted small">Net Calories</div><div class="fw-bold text-info" id="progressNetCalories">0</div></div></div>
+                <div class="col-6 col-md-3"><div class="bg-white p-2 rounded text-center"><div class="text-muted small">Protein</div><div class="fw-bold text-warning" id="progressProtein">0g</div></div></div>
+              </div>
+            </div>
+            <div id="progressLogsContent"></div>
+          </div>
+        </div>
+        <!-- Add Meal Modal -->
+        <div class="modal fade" id="progressAddMealModal" tabindex="-1" aria-labelledby="progressAddMealModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="progressAddMealModalLabel">Add Meal</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <form id="progressAddMealForm">
+                <div class="modal-body">
+                  <div class="mb-3"><label class="form-label">Meal Name</label><input type="text" name="meal" class="form-control" required></div>
+                  <div class="mb-3"><label class="form-label">Calories</label><input type="number" name="calories" class="form-control" required></div>
+                  <div class="row g-2">
+                    <div class="col"><label class="form-label">Protein (g)</label><input type="number" name="protein" class="form-control" required></div>
+                    <div class="col"><label class="form-label">Carbs (g)</label><input type="number" name="carbs" class="form-control" required></div>
+                    <div class="col"><label class="form-label">Fat (g)</label><input type="number" name="fat" class="form-control" required></div>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                  <button type="submit" class="btn btn-success">Add Meal</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        <!-- Add Workout Modal -->
+        <div class="modal fade" id="progressAddWorkoutModal" tabindex="-1" aria-labelledby="progressAddWorkoutModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="progressAddWorkoutModalLabel">Add Workout</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <form id="progressAddWorkoutForm">
+                <div class="modal-body">
+                  <div class="mb-3"><label class="form-label">Workout Type</label><input type="text" name="type" class="form-control" required></div>
+                  <div class="mb-3"><label class="form-label">Duration (min)</label><input type="number" name="duration" class="form-control" required></div>
+                  <div class="mb-3"><label class="form-label">Calories Burned</label><input type="number" name="caloriesBurned" class="form-control" required></div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                  <button type="submit" class="btn btn-primary">Add Workout</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        <!-- Success Toast -->
+        <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055">
+          <div id="progressSuccessToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+              <div class="toast-body"><i class="bi bi-check-circle me-2"></i><span id="progressSuccessMsg">Success!</span></div>
+              <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+          </div>
+        </div>
+        <script>
+          // --- Progress Section State ---
+          const progressData = { meals: {}, workouts: {} };
+          let progressView = 'meals';
+          let progressCurrentMonth = new Date();
+          let progressSelectedDate = new Date().toISOString().split('T')[0];
+
+          // Calendar logic
+          function getProgressDaysInMonth(year, month) { return new Date(year, month + 1, 0).getDate(); }
+          function getProgressFirstDayOfMonth(year, month) { return new Date(year, month, 1).getDay(); }
+          function formatProgressSelectedDate(date) {
+            return new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+          }
+          function progressHasLogsOnDate(day) {
+            if (!day) return false;
+            const dateStr = `${progressCurrentMonth.getFullYear()}-${String(progressCurrentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const hasMeals = progressData.meals[dateStr] && progressData.meals[dateStr].length > 0;
+            const hasWorkouts = progressData.workouts[dateStr] && progressData.workouts[dateStr].length > 0;
+            return hasMeals || hasWorkouts;
+          }
+          function progressGetDayClass(day) {
+            if (!day) return 'bg-light';
+            const dateStr = `${progressCurrentMonth.getFullYear()}-${String(progressCurrentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const isSelected = dateStr === progressSelectedDate;
+            const hasLogs = progressHasLogsOnDate(day);
+            if (isSelected) return 'bg-info text-white fw-bold';
+            if (hasLogs) return 'bg-success bg-opacity-10';
+            return '';
+          }
+          function renderProgressCalendar() {
+            const year = progressCurrentMonth.getFullYear();
+            const month = progressCurrentMonth.getMonth();
+            const daysInMonth = getProgressDaysInMonth(year, month);
+            const firstDayOfMonth = getProgressFirstDayOfMonth(year, month);
+            document.getElementById('progressCurrentMonth').textContent = progressCurrentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            let calendarHTML = '';
+            for (let i = 0; i < firstDayOfMonth; i++) {
+              calendarHTML += '<div class="col aspect-ratio-1"></div>';
+            }
+            for (let day = 1; day <= daysInMonth; day++) {
+              calendarHTML += `<div class="col aspect-ratio-1"><button class="w-100 h-100 d-flex align-items-center justify-content-center rounded text-sm ${progressGetDayClass(day)}" onclick="progressHandleDateClick(${day})">${day}</button></div>`;
+            }
+            document.getElementById('progressCalendarDays').innerHTML = calendarHTML;
+            document.getElementById('progressSelectedDateDisplay').textContent = formatProgressSelectedDate(progressSelectedDate);
+          }
+          function progressHandleDateClick(day) {
+            const dateStr = `${progressCurrentMonth.getFullYear()}-${String(progressCurrentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            progressSelectedDate = dateStr;
+            renderProgressCalendar();
+            renderProgressLogs();
+          }
+          document.getElementById('progressPrevMonth').addEventListener('click', () => { progressCurrentMonth = new Date(progressCurrentMonth.getFullYear(), progressCurrentMonth.getMonth() - 1, 1); renderProgressCalendar(); });
+          document.getElementById('progressNextMonth').addEventListener('click', () => { progressCurrentMonth = new Date(progressCurrentMonth.getFullYear(), progressCurrentMonth.getMonth() + 1, 1); renderProgressCalendar(); });
+          // Tabs
+          document.getElementById('progressMealsTab').addEventListener('click', function() {
+            progressView = 'meals';
+            this.classList.add('active');
+            document.getElementById('progressWorkoutsTab').classList.remove('active');
+            renderProgressLogs();
+          });
+          document.getElementById('progressWorkoutsTab').addEventListener('click', function() {
+            progressView = 'workouts';
+            this.classList.add('active');
+            document.getElementById('progressMealsTab').classList.remove('active');
+            renderProgressLogs();
+          });
+          // Add Meal
+          // (No JS needed for opening Add Meal modal; handled by data-bs-toggle)
+          document.getElementById('progressAddMealForm').onsubmit = function(e) {
+            e.preventDefault();
+            const form = e.target;
+            const meal = form.meal.value;
+            const calories = form.calories.value;
+            const protein = form.protein.value;
+            const carbs = form.carbs.value;
+            const fat = form.fat.value;
+            if (!progressData.meals[progressSelectedDate]) progressData.meals[progressSelectedDate] = [];
+            progressData.meals[progressSelectedDate].push({ meal, calories: parseInt(calories), protein: parseInt(protein), carbs: parseInt(carbs), fat: parseInt(fat) });
+            form.reset();
+            bootstrap.Modal.getInstance(document.getElementById('progressAddMealModal')).hide();
+            showProgressToast('Meal logged successfully!');
+            renderProgressLogs();
+            renderProgressCalendar();
+          };
+          // Add Workout
+          // (No JS needed for opening Add Workout modal; handled by data-bs-toggle)
+          document.getElementById('progressAddWorkoutForm').onsubmit = function(e) {
+            e.preventDefault();
+            const form = e.target;
+            const type = form.type.value;
+            const duration = form.duration.value;
+            const caloriesBurned = form.caloriesBurned.value;
+            if (!progressData.workouts[progressSelectedDate]) progressData.workouts[progressSelectedDate] = [];
+            progressData.workouts[progressSelectedDate].push({ type, duration: parseInt(duration), caloriesBurned: parseInt(caloriesBurned) });
+            form.reset();
+            bootstrap.Modal.getInstance(document.getElementById('progressAddWorkoutModal')).hide();
+            showProgressToast('Workout logged successfully!');
+            renderProgressLogs();
+            renderProgressCalendar();
+          };
+          // Toast
+          function showProgressToast(msg) {
+            document.getElementById('progressSuccessMsg').textContent = msg;
+            var toast = new bootstrap.Toast(document.getElementById('progressSuccessToast'));
+            toast.show();
+          }
+          // Render logs and summary
+          function renderProgressLogs() {
+            const meals = progressData.meals[progressSelectedDate] || [];
+            const workouts = progressData.workouts[progressSelectedDate] || [];
+            // Summary
+            const caloriesIn = meals.reduce((sum, m) => sum + (parseInt(m.calories) || 0), 0);
+            const protein = meals.reduce((sum, m) => sum + (parseInt(m.protein) || 0), 0);
+            const carbs = meals.reduce((sum, m) => sum + (parseInt(m.carbs) || 0), 0);
+            const fat = meals.reduce((sum, m) => sum + (parseInt(m.fat) || 0), 0);
+            const caloriesOut = workouts.reduce((sum, w) => sum + (parseInt(w.caloriesBurned) || 0), 0);
+            document.getElementById('progressCaloriesIn').textContent = caloriesIn;
+            document.getElementById('progressCaloriesBurned').textContent = caloriesOut;
+            document.getElementById('progressNetCalories').textContent = caloriesIn - caloriesOut;
+            document.getElementById('progressProtein').textContent = protein + 'g';
+            document.getElementById('progressSummaryDate').textContent = formatProgressSelectedDate(progressSelectedDate);
+            // Logs
+            let html = '';
+            if (progressView === 'meals') {
+              html += `<h5 class='mb-3'>Meals for ${formatProgressSelectedDate(progressSelectedDate)}</h5>`;
+              if (meals.length === 0) {
+                html += `<div class='text-center py-4 text-muted'><i class='bi bi-egg-fried display-6 mb-2'></i><div>No meals logged for this date</div></div>`;
+              } else {
+                html += `<ul class='list-group mb-3'>${meals.map((m, i) => `
+                  <li class='list-group-item d-flex justify-content-between align-items-start'>
+                    <div>
+                      <div class='fw-bold'>${m.meal}</div>
+                      <div class='small text-muted'>${m.calories} kcal</div>
+                      <div class='text-xs text-secondary'>P: ${m.protein}g • C: ${m.carbs}g • F: ${m.fat}g</div>
+                    </div>
+                  </li>`).join('')}</ul>`;
+              }
+            } else {
+              html += `<h5 class='mb-3'>Workouts for ${formatProgressSelectedDate(progressSelectedDate)}</h5>`;
+              if (workouts.length === 0) {
+                html += `<div class='text-center py-4 text-muted'><i class='bi bi-bicycle display-6 mb-2'></i><div>No workouts logged for this date</div></div>`;
+              } else {
+                html += `<ul class='list-group mb-3'>${workouts.map((w, i) => `
+                  <li class='list-group-item d-flex justify-content-between align-items-start'>
+                    <div>
+                      <div class='fw-bold'>${w.type}</div>
+                      <div class='small text-muted'>${w.duration} min</div>
+                      <div class='text-xs text-secondary'>${w.caloriesBurned} calories burned</div>
+                    </div>
+                  </li>`).join('')}</ul>`;
+              }
+            }
+            document.getElementById('progressLogsContent').innerHTML = html;
+          }
+          // Initial render
+          renderProgressCalendar();
+          renderProgressLogs();
+        </script>
+      </div>
+
+      <!-- Meal Plans Section -->
+      <div class="dashboard-card p-4 mb-4" id="mealPlansSection" style="background-color: #92f0bb;">
+        <div class="text-center mb-4">
+          <h2 class="h4 fw-bold text-success mb-2">Meal Plans</h2>
+          <p class="text-muted">Get personalized meal recommendations for each part of your day. Log meals to track your nutrition!</p>
+        </div>
+        <div id="mealPlansCategories"></div>
+        <!-- Log Meal Modal -->
+        <div class="modal fade" id="logMealModal" tabindex="-1" aria-labelledby="logMealModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="logMealModalLabel">Log Meal</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body" id="logMealModalBody"></div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmLogMealBtn">Confirm</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Toast for meal log -->
+        <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055">
+          <div id="logMealSuccessToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+              <div class="toast-body">
+                <i class="bi bi-check-circle me-2"></i>Meal logged successfully!
+              </div>
+              <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+          </div>
+        </div>
+        <script>
+          // --- Meal Plans Data ---
+          const mealPlans = {
+            breakfast: [
+              {
+                name: 'Oatmeal with Berries',
+                description: 'A hearty bowl of oats topped with fresh berries and a drizzle of honey.',
+                calories: 320,
+                protein: 8,
+                carbs: 60,
+                fat: 6,
+                image: 'https://i.ibb.co/0jY38LqR/download.jpg',
+                variations: ['Add nuts or seeds for extra protein', 'Use almond milk for a dairy-free option']
+              },
+              {
+                name: 'Greek Yogurt Parfait',
+                description: 'Layers of Greek yogurt, granola, and mixed fruit.',
+                calories: 250,
+                protein: 14,
+                carbs: 35,
+                fat: 5,
+                image: 'https://images.pexels.com/photos/70497/pexels-photo-70497.jpeg?auto=compress&h=120&w=120&fit=crop',
+                variations: ['Swap granola for nuts', 'Add a spoon of chia seeds']
+              },
+              {
+                name: 'Avocado Toast with Egg',
+                description: 'Whole grain toast topped with smashed avocado and a poached egg.',
+                calories: 280,
+                protein: 10,
+                carbs: 32,
+                fat: 13,
+                image: 'https://images.pexels.com/photos/1640770/pexels-photo-1640770.jpeg?auto=compress&h=120&w=120&fit=crop',
+                variations: ['Add tomato slices', 'Use a fried egg instead of poached']
+              },
+              {
+                name: 'Banana Peanut Butter Smoothie',
+                description: 'A creamy smoothie with banana, peanut butter, and milk.',
+                calories: 310,
+                protein: 9,
+                carbs: 45,
+                fat: 11,
+                image: 'https://images.pexels.com/photos/4198023/pexels-photo-4198023.jpeg?auto=compress&h=120&w=120&fit=crop',
+                variations: ['Add a scoop of protein powder', 'Use almond butter for a twist']
+              }
+            ],
+            lunch: [
+              {
+                name: 'Grilled Chicken Salad',
+                description: 'Grilled chicken breast on a bed of greens with tomatoes, cucumbers, and vinaigrette.',
+                calories: 400,
+                protein: 32,
+                carbs: 18,
+                fat: 18,
+                image: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&h=120&w=120&fit=crop',
+                variations: ['Add avocado for healthy fats', 'Use tofu for a vegetarian option']
+              },
+              {
+                name: 'Quinoa Veggie Bowl',
+                description: 'Quinoa with roasted vegetables and a lemon-tahini dressing.',
+                calories: 370,
+                protein: 12,
+                carbs: 60,
+                fat: 9,
+                image: 'https://images.pexels.com/photos/1640771/pexels-photo-1640771.jpeg?auto=compress&h=120&w=120&fit=crop',
+                variations: ['Add chickpeas for more protein', 'Top with feta cheese']
+              },
+              {
+                name: 'Turkey & Hummus Wrap',
+                description: 'Whole wheat wrap with turkey breast, hummus, spinach, and shredded carrots.',
+                calories: 350,
+                protein: 22,
+                carbs: 38,
+                fat: 10,
+                image: 'https://images.pexels.com/photos/461382/pexels-photo-461382.jpeg?auto=compress&h=120&w=120&fit=crop',
+                variations: ['Use grilled chicken instead of turkey', 'Add sliced cucumber']
+              },
+              {
+                name: 'Lentil Soup with Whole Grain Bread',
+                description: 'Hearty lentil soup served with a slice of whole grain bread.',
+                calories: 320,
+                protein: 16,
+                carbs: 52,
+                fat: 4,
+                image: 'https://images.pexels.com/photos/1640773/pexels-photo-1640773.jpeg?auto=compress&h=120&w=120&fit=crop',
+                variations: ['Add spinach to the soup', 'Top with a dollop of Greek yogurt']
+              }
+            ],
+            dinner: [
+              {
+                name: 'Baked Salmon & Veggies',
+                description: 'Oven-baked salmon fillet with steamed broccoli and sweet potato.',
+                calories: 480,
+                protein: 35,
+                carbs: 40,
+                fat: 18,
+                image: 'https://images.pexels.com/photos/46239/salmon-dish-food-meal-46239.jpeg?auto=compress&h=120&w=120&fit=crop',
+                variations: ['Swap salmon for chicken breast', 'Add brown rice for extra carbs']
+              },
+              {
+                name: 'Vegetable Stir-Fry',
+                description: 'Mixed vegetables stir-fried with tofu and a light soy sauce.',
+                calories: 350,
+                protein: 15,
+                carbs: 50,
+                fat: 10,
+                image: 'https://images.pexels.com/photos/1640772/pexels-photo-1640772.jpeg?auto=compress&h=120&w=120&fit=crop',
+                variations: ['Serve with brown rice or noodles', 'Add shrimp or chicken']
+              },
+              {
+                name: 'Chicken & Brown Rice Bowl',
+                description: 'Grilled chicken breast served over brown rice with steamed green beans.',
+                calories: 420,
+                protein: 36,
+                carbs: 48,
+                fat: 8,
+                image: 'https://images.pexels.com/photos/461382/pexels-photo-461382.jpeg?auto=compress&h=120&w=120&fit=crop',
+                variations: ['Swap chicken for tofu', 'Add a drizzle of teriyaki sauce']
+              },
+              {
+                name: 'Shrimp Pasta Primavera',
+                description: 'Whole wheat pasta tossed with shrimp and a medley of sautéed vegetables.',
+                calories: 510,
+                protein: 28,
+                carbs: 70,
+                fat: 12,
+                image: 'https://i.ibb.co/0jY38LqR/download.jpg',
+                variations: ['Use chicken or tofu instead of shrimp', 'Add extra veggies like zucchini or bell pepper']
+              }
+            ]
+          };
+          let expandedMealCategory = null; // Changed from 'breakfast' to null
+          let mealToLog = null;
+
+          function renderMealPlans() {
+            const categories = [
+              { key: 'breakfast', label: 'Breakfast', icon: 'bi-cup-hot' },
+              { key: 'lunch', label: 'Lunch', icon: 'bi-egg-fried' },
+              { key: 'dinner', label: 'Dinner', icon: 'bi-moon-stars' }
+            ];
+            let html = '';
+            categories.forEach(cat => {
+              html += `<div class='mb-4 card'>
+                <div class='card-header d-flex justify-content-between align-items-center' style='cursor:pointer;' onclick='toggleMealCategory("${cat.key}")'>
+                  <div><i class='bi ${cat.icon} me-2'></i><span class='fw-bold'>${cat.label}</span></div>
+                  <i class='bi bi-chevron-${expandedMealCategory === cat.key ? 'up' : 'down'} fs-5'></i>
+                </div>
+                <div class='collapse${expandedMealCategory === cat.key ? ' show' : ''}' id='meal-cat-${cat.key}'>
+                  <div class='card-body'>
+                    ${mealPlans[cat.key].map(meal => `
+                      <div class='mb-4 border-bottom pb-3'>
+                        <div class='row'>
+                          <div class='col-md-3 mb-2 mb-md-0'>
+                            <a href='${meal.image}' target='_blank'>
+                              <img src='${meal.image}' alt='${meal.name}' class='img-fluid rounded shadow-sm' style='height:120px;object-fit:cover;'>
+                            </a>
+                          </div>
+                          <div class='col-md-9'>
+                            <div class='d-flex justify-content-between align-items-start'>
+                              <div>
+                                <div class='fw-bold'>${meal.name}</div>
+                                <div class='small text-muted mb-1'>${meal.description}</div>
+                              </div>
+                              <div class='text-end'>
+                                <span class='badge bg-success me-1'>${meal.calories} cal</span>
+                                <span class='badge bg-warning text-dark me-1'>P: ${meal.protein}g</span>
+                                <span class='badge bg-info text-dark me-1'>C: ${meal.carbs}g</span>
+                                <span class='badge bg-secondary'>F: ${meal.fat}g</span>
+                              </div>
+                            </div>
+                            <div class='mt-2'>
+                              <button class='btn btn-outline-success btn-sm' onclick='addMealToPlan(${JSON.stringify(meal).replace(/'/g, "&#39;")})'><i class='bi bi-plus-circle me-1'></i>Add to Plan</button>
+                            </div>
+                            <div class='mt-2'>
+                              <div class='fw-bold mb-1'>Variations</div>
+                              <ul class='ps-3'>${meal.variations.map(v => `<li>${v}</li>`).join('')}</ul>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              </div>`;
+            });
+            document.getElementById('mealPlansCategories').innerHTML = html;
+          }
+          function toggleMealCategory(catKey) {
+            expandedMealCategory = expandedMealCategory === catKey ? null : catKey;
+            renderMealPlans();
+          }
+          window.toggleMealCategory = toggleMealCategory;
+          renderMealPlans();
+
+          // --- Log Meal Modal Logic ---
+          function showLogMealModal(meal) {
+            mealToLog = meal;
+            document.getElementById('logMealModalBody').innerHTML = `
+              <div class='mb-2'><strong>${meal.name}</strong></div>
+              <div class='mb-2 text-muted'>${meal.description}</div>
+              <div class='mb-2'><span class='badge bg-success'>${meal.calories} cal</span> <span class='badge bg-warning text-dark'>P: ${meal.protein}g</span> <span class='badge bg-info text-dark'>C: ${meal.carbs}g</span> <span class='badge bg-secondary'>F: ${meal.fat}g</span></div>
+            `;
+            var logModal = new bootstrap.Modal(document.getElementById('logMealModal'));
+            logModal.show();
+          }
+          window.showLogMealModal = showLogMealModal;
+
+          // Confirm button logic for logging meal
+          if (document.getElementById('confirmLogMealBtn')) {
+            document.getElementById('confirmLogMealBtn').onclick = function() {
+              if (!mealToLog) return;
+              var logDate = typeof progressSelectedDate !== 'undefined' ? progressSelectedDate : new Date().toISOString().split('T')[0];
+              if (typeof progressData !== 'undefined') {
+                if (!progressData.meals[logDate]) progressData.meals[logDate] = [];
+                progressData.meals[logDate].push({
+                  meal: mealToLog.name,
+                  calories: mealToLog.calories,
+                  protein: mealToLog.protein,
+                  carbs: mealToLog.carbs,
+                  fat: mealToLog.fat
+                });
+                if (typeof renderProgressLogs === 'function') renderProgressLogs();
+                if (typeof renderProgressCalendar === 'function') renderProgressCalendar();
+                // Show the Your Progress toast (same as workout)
+                if (document.getElementById('progressSuccessToast')) {
+                  document.getElementById('progressSuccessMsg').textContent = 'Meal logged successfully!';
+                  var toast = new bootstrap.Toast(document.getElementById('progressSuccessToast'));
+                  toast.show();
+                }
+              }
+              // Close modal
+              var logModal = bootstrap.Modal.getInstance(document.getElementById('logMealModal'));
+              if (logModal) logModal.hide();
+              mealToLog = null;
+            };
+          }
+
+          // Add to Plan logic for meals
+          function addMealToPlan(meal) {
+            var logDate = typeof progressSelectedDate !== 'undefined' ? progressSelectedDate : new Date().toISOString().split('T')[0];
+            if (typeof progressData !== 'undefined') {
+              if (!progressData.meals[logDate]) progressData.meals[logDate] = [];
+              progressData.meals[logDate].push({
+                meal: meal.name,
+                calories: meal.calories,
+                protein: meal.protein,
+                carbs: meal.carbs,
+                fat: meal.fat
+              });
+              if (typeof renderProgressLogs === 'function') renderProgressLogs();
+              if (typeof renderProgressCalendar === 'function') renderProgressCalendar();
+              if (document.getElementById('progressSuccessToast')) {
+                document.getElementById('progressSuccessMsg').textContent = 'Meal added to plan!';
+                var toast = new bootstrap.Toast(document.getElementById('progressSuccessToast'));
+                toast.show();
+              }
+            }
+          }
+          window.addMealToPlan = addMealToPlan;
+        </script>
+      </div>
+
+      <!-- Exercise Plans Section -->
+      <div class="dashboard-card p-4 mt-4 mb-4" id="exercisePlansSection" style="background-color: #f8cfbf;">
+        <div class="text-center mb-4">
+          <h2 class="h4 fw-bold text-primary mb-2">Exercise Plans</h2>
+          <p class="text-muted">Get personalized exercise recommendations based on your fitness level.</p>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Select Your Fitness Level</label>
+          <div class="btn-group w-100" role="group">
+            <button type="button" class="btn btn-outline-primary" id="levelBeginner">Beginner</button>
+            <button type="button" class="btn btn-outline-primary" id="levelIntermediate">Intermediate</button>
+            <button type="button" class="btn btn-outline-primary" id="levelAdvanced">Advanced</button>
+          </div>
+        </div>
+        <div id="exercisePlansCategories"></div>
+        <div class="mt-5 workout-table-card">
+          <h3 class="h5 fw-bold text-primary mb-3">Weekly Workout Plan</h3>
+          <div class="table-responsive">
+            <table class="table workout-table table-striped table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Day</th>
+                  <th>Focus</th>
+                  <th>Duration</th>
+                  <th>Recommendations</th>
+                </tr>
+              </thead>
+              <tbody id="weeklyPlanTable"></tbody>
+            </table>
+          </div>
+          <div class="workout-note mt-4">
+            <i class="bi bi-info-circle-fill"></i>
+            <div>
+              <strong>Note:</strong> Always warm up before exercise and cool down afterward. Listen to your body and adjust intensity as needed. If you experience pain (not to be confused with normal muscle fatigue), stop and consult a healthcare professional.
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Log Workout Modal (outside card) -->
+      <div class="modal fade" id="logWorkoutModal" tabindex="-1" aria-labelledby="logWorkoutModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="logWorkoutModalLabel">Log Workout</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="logWorkoutModalBody"></div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-primary" id="confirmLogWorkoutBtn">Confirm</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Toast -->
+      <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055">
+        <div id="logSuccessToast" class="toast align-items-center text-bg-primary border-0" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="d-flex">
+            <div class="toast-body">
+              <i class="bi bi-check-circle me-2"></i>Workout logged successfully!
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>
+        </div>
+      </div>
+      <script>
+        // --- Exercise Plans Data ---
+        const exercisePlans = {
+          beginner: {
+            cardio: [
+              {
+                title: 'Walking & Light Cardio',
+                description: 'Low-impact cardio exercises suitable for beginners',
+                exercises: [
+                  {
+                    id: 'c1',
+                    name: 'Brisk Walking',
+                    description: 'A simple yet effective cardiovascular exercise that elevates your heart rate while being gentle on your joints.',
+                    muscleGroups: ['Lower Body', 'Core'],
+                    duration: '20-30 min',
+                    caloriesBurned: 150,
+                    difficulty: 'Beginner',
+                    image: 'https://i.ibb.co/Gfz8ndgY/benefits-of-brisk-walking-1024x683.jpg',
+                    instructions: [
+                      'Start with a 5-minute warm-up at a casual pace',
+                      'Increase to a brisk pace where you can still talk but feel slightly breathless',
+                      'Keep your head up, shoulders relaxed, and arms swinging naturally',
+                      'Walk heel-to-toe and engage your core',
+                      'Finish with a 5-minute cool-down at a slower pace',
+                      'Aim for 20-30 minutes total, 3-5 times per week'
+                    ],
+                    variations: [
+                      'Add incline by walking uphill or on a treadmill with elevation',
+                      'Incorporate intervals of faster walking with recovery periods',
+                      'Try walking with light hand weights for increased intensity'
+                    ]
+                  },
+                  {
+                    id: 'c2',
+                    name: 'Stationary Bike',
+                    description: 'A low-impact cardio exercise that strengthens your legs while being gentle on your knees and ankles.',
+                    muscleGroups: ['Quadriceps', 'Hamstrings', 'Calves'],
+                    duration: '15-20 min',
+                    caloriesBurned: 180,
+                    difficulty: 'Beginner',
+                    image: 'https://i.ibb.co/fzDwcW6C/images.jpg',
+                    instructions: [
+                      'Adjust the seat height so your knee is slightly bent at the bottom of the pedal stroke',
+                      'Start with a 5-minute warm-up at low resistance',
+                      'Maintain a steady pace at moderate resistance for 10 minutes',
+                      'Focus on pushing through your heels and engaging your core',
+                      'Cool down for 5 minutes at low resistance',
+                      'Start with 15-20 minutes and gradually increase duration'
+                    ],
+                    variations: [
+                      'Increase resistance for a more challenging workout',
+                      'Try interval training with periods of higher intensity',
+                      'Practice standing pedaling (with appropriate resistance)'
+                    ]
+                  }
+                ]
+              }
+            ],
+            strength: [
+              {
+                title: 'Bodyweight Basics',
+                description: 'Simple strength exercises using just your body weight',
+                exercises: [
+                  {
+                    id: 's1',
+                    name: 'Modified Push-Ups',
+                    description: 'A beginner-friendly variation of push-ups that builds upper body strength while allowing proper form development.',
+                    muscleGroups: ['Chest', 'Shoulders', 'Triceps', 'Core'],
+                    duration: '10-15 min',
+                    caloriesBurned: 80,
+                    difficulty: 'Beginner',
+                    image: 'https://images.pexels.com/photos/3775566/pexels-photo-3775566.jpeg?auto=compress&cs=tinysrgb&w=600',
+                    instructions: [
+                      'Start on your knees with hands slightly wider than shoulder-width',
+                      'Place hands firmly on the ground, fingers pointing forward',
+                      'Keep your body in a straight line from head to knees',
+                      'Lower your chest toward the ground by bending your elbows',
+                      'Push back up to starting position',
+                      'Perform 3 sets of 8-10 repetitions with rest between sets'
+                    ],
+                    variations: [
+                      'Wall push-ups for those building initial strength',
+                      'Incline push-ups using a bench or sturdy chair',
+                      'Standard push-ups from toes as strength improves'
+                    ]
+                  },
+                  {
+                    id: 's2',
+                    name: 'Chair Squats',
+                    description: 'A supported squat variation that builds lower body strength while providing stability and confidence.',
+                    muscleGroups: ['Quadriceps', 'Hamstrings', 'Glutes'],
+                    duration: '10-15 min',
+                    caloriesBurned: 90,
+                    difficulty: 'Beginner',
+                    image: 'https://images.pexels.com/photos/4498482/pexels-photo-4498482.jpeg?auto=compress&cs=tinysrgb&w=600',
+                    instructions: [
+                      'Stand in front of a sturdy chair with feet shoulder-width apart',
+                      'Extend arms forward for balance',
+                      'Keep chest up and back straight',
+                      'Slowly lower your body as if sitting down',
+                      'Lightly touch the chair with your buttocks (don\'t fully sit)',
+                      'Push through your heels to return to standing',
+                      'Perform 3 sets of 10-12 repetitions with rest between sets'
+                    ],
+                    variations: [
+                      'Remove the chair once confidence builds',
+                      'Hold weights at sides for added resistance',
+                      'Try single-leg chair squats for an advanced variation'
+                    ]
+                  }
+                ]
+              }
+            ],
+            flexibility: [
+              {
+                title: 'Basic Stretches',
+                description: 'Simple stretches to improve flexibility and reduce muscle tension',
+                exercises: [
+                  {
+                    id: 'f1',
+                    name: 'Standing Hamstring Stretch',
+                    description: 'A gentle stretch that targets the back of your legs to improve flexibility and prevent lower back pain.',
+                    muscleGroups: ['Hamstrings', 'Lower Back'],
+                    duration: '5-10 min',
+                    caloriesBurned: 30,
+                    difficulty: 'Beginner',
+                    image: 'https://images.pexels.com/photos/4057059/pexels-photo-4057059.jpeg?auto=compress&cs=tinysrgb&w=600',
+                    instructions: [
+                      'Stand with feet hip-width apart',
+                      'Extend one leg forward with heel on the ground and toes pointing up',
+                      'Hinge at the hips and lean forward slightly',
+                      'Keep your back straight (not rounded)',
+                      'Hold for 20-30 seconds, feeling a stretch in the back of your extended leg',
+                      'Switch legs and repeat',
+                      'Perform 2-3 sets per leg'
+                    ],
+                    variations: [
+                      'Seated hamstring stretch with legs extended',
+                      'Single-leg hamstring stretch while lying on your back',
+                      'Forward fold for a deeper stretch as flexibility improves'
+                    ]
+                  },
+                  {
+                    id: 'f2',
+                    name: 'Shoulder and Chest Stretch',
+                    description: 'A gentle stretch that opens up the chest and shoulders to improve posture and reduce upper body tension.',
+                    muscleGroups: ['Chest', 'Shoulders'],
+                    duration: '5-10 min',
+                    caloriesBurned: 25,
+                    difficulty: 'Beginner',
+                    image: 'https://images.pexels.com/photos/4056151/pexels-photo-4056151.jpeg?auto=compress&cs=tinysrgb&w=600',
+                    instructions: [
+                      'Stand with feet shoulder-width apart',
+                      'Clasp hands behind your back',
+                      'Gently lift your arms while keeping them straight',
+                      'Simultaneously lift your chest and look slightly upward',
+                      'Hold for 20-30 seconds, feeling a stretch across your chest and shoulders',
+                      'Release and repeat 2-3 times'
+                    ],
+                    variations: [
+                      'Doorway chest stretch with arms forming a "goal post" shape',
+                      'Wall corner stretch for deeper chest opening',
+                      'Using a towel or band for assistance if you can\'t clasp hands'
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          intermediate: {
+            cardio: [
+              {
+                title: 'Moderate Intensity Cardio',
+                description: 'Cardio exercises for those with some fitness experience',
+                exercises: [
+                  {
+                    id: 'c3',
+                    name: 'Jogging',
+                    description: 'A moderate-intensity cardio exercise that builds endurance and cardiovascular health.',
+                    muscleGroups: ['Lower Body', 'Core', 'Cardiovascular System'],
+                    duration: '20-30 min',
+                    caloriesBurned: 250,
+                    difficulty: 'Intermediate',
+                    image: 'https://images.pexels.com/photos/1199590/pexels-photo-1199590.jpeg?auto=compress&cs=tinysrgb&w=600',
+                    instructions: [
+                      'Start with a 5-minute walking warm-up',
+                      'Transition to a comfortable jogging pace where you can still speak in short sentences',
+                      'Maintain an upright posture with a slight forward lean',
+                      'Land midfoot, not on your heels or toes',
+                      'Keep arms bent at 90 degrees, swinging naturally from the shoulders',
+                      'End with a 5-minute walking cool-down',
+                      'Aim for 20-30 minutes, 3-4 times per week'
+                    ],
+                    variations: [
+                      'Interval training with alternating jogging and sprinting',
+                      'Hill jogging for increased intensity',
+                      'Trail jogging for varied terrain challenges'
+                    ]
+                  },
+                  {
+                    id: 'c4',
+                    name: 'Elliptical Training',
+                    description: 'A low-impact full-body cardio workout that\'s easier on the joints than running.',
+                    muscleGroups: ['Quadriceps', 'Hamstrings', 'Glutes', 'Arms', 'Core'],
+                    duration: '25-35 min',
+                    caloriesBurned: 300,
+                    difficulty: 'Intermediate',
+                    image: 'https://i.ibb.co/DPGCsbzf/images-1.jpg',
+                    instructions: [
+                      'Set the resistance to a moderate level',
+                      'Start with a 5-minute warm-up at low resistance',
+                      'Increase to moderate resistance for 20-25 minutes',
+                      'Maintain good posture with shoulders back and core engaged',
+                      'Use both the arm handles and leg motion for a full-body workout',
+                      'Cool down for 5 minutes at low resistance',
+                      'Aim to maintain a steady pace throughout'
+                    ],
+                    variations: [
+                      'High-intensity interval training (HIIT) with resistance changes',
+                      'Reverse pedaling to target different muscle groups',
+                      'Hands-free elliptical work to focus on core stability'
+                    ]
+                  }
+                ]
+              }
+            ],
+            strength: [
+              {
+                title: 'Intermediate Strength Training',
+                description: 'More challenging strength exercises for those with a fitness foundation',
+                exercises: [
+                  {
+                    id: 's3',
+                    name: 'Standard Push-Ups',
+                    description: 'A classic exercise that strengthens the chest, shoulders, triceps, and core muscles.',
+                    muscleGroups: ['Chest', 'Shoulders', 'Triceps', 'Core'],
+                    duration: '15-20 min',
+                    caloriesBurned: 120,
+                    difficulty: 'Intermediate',
+                    image: 'https://images.pexels.com/photos/4162599/pexels-photo-4162599.jpeg?auto=compress&cs=tinysrgb&w=600',
+                    instructions: [
+                      'Start in a plank position with hands slightly wider than shoulder-width',
+                      'Keep your body in a straight line from head to heels',
+                      'Lower your body by bending your elbows until your chest nearly touches the floor',
+                      'Push back up to the starting position',
+                      'Keep core engaged throughout the movement',
+                      'Perform 3-4 sets of 10-15 repetitions with rest between sets'
+                    ],
+                    variations: [
+                      'Wide-grip push-ups to target chest muscles more',
+                      'Diamond push-ups to target triceps more',
+                      'Decline push-ups (feet elevated) for increased difficulty'
+                    ]
+                  },
+                  {
+                    id: 's4',
+                    name: 'Bodyweight Squats',
+                    description: 'A fundamental lower body exercise that targets multiple muscle groups simultaneously.',
+                    muscleGroups: ['Quadriceps', 'Hamstrings', 'Glutes', 'Core'],
+                    duration: '15-20 min',
+                    caloriesBurned: 150,
+                    difficulty: 'Intermediate',
+                    image: 'https://images.pexels.com/photos/4534860/pexels-photo-4534860.jpeg?auto=compress&cs=tinysrgb&w=600',
+                    instructions: [
+                      'Stand with feet shoulder-width apart or slightly wider',
+                      'Toes can be slightly turned out',
+                      'Keep chest up and back straight',
+                      'Bend knees and push hips back as if sitting in a chair',
+                      'Lower until thighs are parallel to the ground (or as low as comfortable)',
+                      'Push through heels to return to standing position',
+                      'Perform 3-4 sets of 15-20 repetitions with rest between sets'
+                    ],
+                    variations: [
+                      'Sumo squats with a wider stance',
+                      'Pulse squats for increased time under tension',
+                      'Jump squats to add plyometric intensity'
+                    ]
+                  }
+                ]
+              }
+            ],
+            flexibility: [
+              {
+                title: 'Intermediate Flexibility Training',
+                description: 'More advanced stretches for improved range of motion',
+                exercises: [
+                  {
+                    id: 'f3',
+                    name: 'Pigeon Pose',
+                    description: 'A yoga-inspired stretch that opens the hips and stretches the glutes and lower back.',
+                    muscleGroups: ['Hip Flexors', 'Glutes', 'Lower Back'],
+                    duration: '10-15 min',
+                    caloriesBurned: 40,
+                    difficulty: 'Intermediate',
+                    image: 'https://images.pexels.com/photos/3822906/pexels-photo-3822906.jpeg?auto=compress&cs=tinysrgb&w=600',
+                    instructions: [
+                      'Start in a downward dog position or on hands and knees',
+                      'Bring your right knee forward and place it behind your right wrist',
+                      'Extend your left leg straight behind you',
+                      'Lower your upper body forward, keeping hips square',
+                      'Hold for 30-60 seconds, breathing deeply',
+                      'Repeat on the other side',
+                      'Perform 2-3 sets per side'
+                    ],
+                    variations: [
+                      'Reclined pigeon pose for those with less flexibility',
+                      'Thread the needle as an alternative',
+                      'King pigeon pose for a deeper stretch (advanced)'
+                    ]
+                  },
+                  {
+                    id: 'f4',
+                    name: 'Dynamic Lunge Stretch',
+                    description: 'An active stretch that improves hip flexibility and prepares the body for lower body exercises.',
+                    muscleGroups: ['Hip Flexors', 'Quadriceps', 'Hamstrings'],
+                    duration: '10-15 min',
+                    caloriesBurned: 60,
+                    difficulty: 'Intermediate',
+                    image: 'https://images.pexels.com/photos/4498185/pexels-photo-4498185.jpeg?auto=compress&cs=tinysrgb&w=600',
+                    instructions: [
+                      'Start standing with feet together',
+                      'Take a large step forward with your right foot',
+                      'Lower your body until both knees are bent at 90 degrees',
+                      'Keep front knee aligned over ankle, not past toes',
+                      'Feel the stretch in the left hip flexor',
+                      'Hold for 2-3 seconds, then push off the front foot to return to standing',
+                      'Alternate legs for 10-12 repetitions each side'
+                    ],
+                    variations: [
+                      'Walking lunges for continuous movement',
+                      'Reverse lunges for knee-friendly variation',
+                      'Lunge with rotation to add upper body mobility'
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          advanced: {
+            cardio: [
+              {
+                title: 'High-Intensity Cardio',
+                description: 'Challenging cardio exercises for those with significant fitness experience',
+                exercises: [
+                  {
+                    id: 'c5',
+                    name: 'HIIT Sprints',
+                    description: 'High-intensity interval training that alternates between maximum effort sprints and recovery periods.',
+                    muscleGroups: ['Lower Body', 'Core', 'Cardiovascular System'],
+                    duration: '20-30 min',
+                    caloriesBurned: 400,
+                    difficulty: 'Advanced',
+                    image: 'https://images.pexels.com/photos/3621183/pexels-photo-3621183.jpeg?auto=compress&cs=tinysrgb&w=600',
+                    instructions: [
+                      'Start with a 5-minute dynamic warm-up',
+                      'Sprint at maximum effort for 30 seconds',
+                      'Recover with slow jogging or walking for 90 seconds',
+                      'Repeat the sprint-recovery cycle 8-10 times',
+                      'Cool down with a 5-minute walk',
+                      'Focus on proper running form: upright posture, mid-foot strike, arm drive',
+                      'Perform 2-3 times per week with rest days in between'
+                    ],
+                    variations: [
+                      'Hill sprints for increased resistance',
+                      'Different work-to-rest ratios (1:2, 1:1) as fitness improves',
+                      'Incorporate directional changes or ladder drills between sprints'
+                    ]
+                  },
+                  {
+                    id: 'c6',
+                    name: 'Plyometric Circuit',
+                    description: 'An explosive cardio workout that combines jumping exercises to improve power, speed, and calorie burn.',
+                    muscleGroups: ['Full Body', 'Cardiovascular System'],
+                    duration: '25-30 min',
+                    caloriesBurned: 350,
+                    difficulty: 'Advanced',
+                    image: 'https://i.ibb.co/kRFdPHd/6968-drop-depth.jpg',
+                    instructions: [
+                      'Warm up thoroughly for 5-10 minutes with dynamic movements',
+                      'Perform each exercise in the circuit for 30-45 seconds',
+                      'Move immediately to the next exercise with minimal rest',
+                      'Rest 1-2 minutes between circuit rounds',
+                      'Complete 3-4 rounds of the circuit',
+                      'Example circuit: Jump squats, burpees, jumping lunges, mountain climbers, box jumps',
+                      'Cool down with 5 minutes of light movement followed by stretching'
+                    ],
+                    variations: [
+                      'Add weights for increased resistance (weighted vest, dumbbells)',
+                      'Increase work time and decrease rest time',
+                      'Incorporate more complex plyometric movements like single-leg jumps'
+                    ]
+                  }
+                ]
+              }
+            ],
+            strength: [
+              {
+                title: 'Advanced Strength Training',
+                description: 'Challenging strength exercises for experienced fitness enthusiasts',
+                exercises: [
+                  {
+                    id: 's5',
+                    name: 'Plyometric Push-Ups',
+                    description: 'An explosive upper body exercise that builds power, strength, and muscular endurance.',
+                    muscleGroups: ['Chest', 'Shoulders', 'Triceps', 'Core'],
+                    duration: '15-20 min',
+                    caloriesBurned: 200,
+                    difficulty: 'Advanced',
+                    image: 'https://images.pexels.com/photos/4498190/pexels-photo-4498190.jpeg?auto=compress&cs=tinysrgb&w=600',
+                    instructions: [
+                      'Start in a standard push-up position with hands shoulder-width apart',
+                      'Lower your body as in a regular push-up',
+                      'Push up explosively so your hands leave the ground',
+                      'Land softly with slightly bent elbows to absorb impact',
+                      'Immediately flow into the next repetition',
+                      'Maintain rigid core and body alignment throughout',
+                      'Perform 3-4 sets of 8-12 repetitions with rest between sets'
+                    ],
+                    variations: [
+                      'Clap push-ups (clap hands in the air phase)',
+                      'Staggered plyometric push-ups (alternating hand positions)',
+                      'Single-arm plyometric push-ups for extreme challenge'
+                    ]
+                  },
+                  {
+                    id: 's6',
+                    name: 'Pistol Squats',
+                    description: 'A challenging single-leg squat that builds tremendous lower body strength, balance, and mobility.',
+                    muscleGroups: ['Quadriceps', 'Hamstrings', 'Glutes', 'Core', 'Stabilizers'],
+                    duration: '15-20 min',
+                    caloriesBurned: 180,
+                    difficulty: 'Advanced',
+                    image: 'https://images.pexels.com/photos/4498443/pexels-photo-4498443.jpeg?auto=compress&cs=tinysrgb&w=600',
+                    instructions: [
+                      'Stand on one leg with the other leg extended forward',
+                      'Extend arms forward for counterbalance',
+                      'Keep your back straight and chest up',
+                      'Slowly lower yourself on the standing leg until your thigh is parallel to the ground (or lower if possible)',
+                      'Keep the extended leg off the ground throughout the movement',
+                      'Push through the heel of your standing foot to return to starting position',
+                      'Perform 3 sets of 5-8 repetitions per leg with rest between sets'
+                    ],
+                    variations: [
+                      'Assisted pistol squats using a TRX or pole for support',
+                      'Box pistol squats (squatting to a box/bench)',
+                      'Weighted pistol squats holding a weight for added resistance'
+                    ]
+                  }
+                ]
+              }
+            ],
+            flexibility: [
+              {
+                title: 'Advanced Flexibility Training',
+                description: 'Complex stretches and mobility work for those with solid flexibility foundations',
+                exercises: [
+                  {
+                    id: 'f5',
+                    name: 'Full Split',
+                    description: 'An advanced stretch that develops extreme flexibility in the hamstrings, hip flexors, and groin muscles.',
+                    muscleGroups: ['Hamstrings', 'Hip Flexors', 'Groin'],
+                    duration: '15-20 min',
+                    caloriesBurned: 50,
+                    difficulty: 'Advanced',
+                    image: 'https://images.pexels.com/photos/9993285/pexels-photo-9993285.jpeg?auto=compress&cs=tinysrgb&w=600',
+                    instructions: [
+                      'Begin with a thorough warm-up focusing on the lower body',
+                      'Start in a low lunge position',
+                      'Gradually slide the front leg forward and back leg backward',
+                      'Keep hips square and facing forward',
+                      'Use hands or blocks for support as needed',
+                      'Hold the position at your current flexibility limit for 30-60 seconds',
+                      'Release and repeat 2-3 times on each side',
+                      'Progress gradually over weeks and months'
+                    ],
+                    variations: [
+                      'Front split (one leg forward, one back)',
+                      'Side split (both legs out to the sides)',
+                      'Elevated split training (front foot on a slightly raised surface)'
+                    ]
+                  },
+                  {
+                    id: 'f6',
+                    name: 'Advanced Shoulder Mobility Flow',
+                    description: 'A dynamic sequence of movements that improves shoulder flexibility, stability, and range of motion.',
+                    muscleGroups: ['Shoulders', 'Upper Back', 'Chest'],
+                    duration: '15-20 min',
+                    caloriesBurned: 70,
+                    difficulty: 'Advanced',
+                    image: 'https://images.pexels.com/photos/6107139/pexels-photo-6107139.jpeg?auto=compress&cs=tinysrgb&w=600',
+                    instructions: [
+                      'Begin with arm circles forward and backward, progressively larger',
+                      'Perform shoulder dislocates with a band or stick (holding a band with both hands and bringing it from front to back while keeping arms straight)',
+                      'Move into wall slides (standing with back against wall, arms in "goal post" position, sliding up and down)',
+                      'Progress to thoracic bridge (laying on back, feet on floor, hands supporting lower back, extending chest upward)',
+                      'Include thread the needle pose for rotational mobility',
+                      'Flow between positions with controlled movement',
+                      'Perform the full sequence 2-3 times'
+                    ],
+                    variations: [
+                      'Add resistance with bands during certain movements',
+                      'Incorporate yoga poses like wheel pose or forearm stands',
+                      'Include partner-assisted stretches for deeper mobilization'
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        };
+        let selectedLevel = 'beginner';
+        let expandedCategory = null; // Changed from 'cardio' to null
+        let expandedExercise = null;
+        let exerciseToLog = null;
+
+        function renderExercisePlans() {
+          const categories = exercisePlans[selectedLevel];
+          let html = '';
+          Object.entries(categories).forEach(([catKey, catArr]) => {
+            catArr.forEach(category => {
+              html += `<div class='mb-4 card'>
+                <div class='card-header d-flex justify-content-between align-items-center' style='cursor:pointer;' onclick='toggleCategory("${catKey}")'>
+                  <div>
+                    <div class='fw-bold'>${category.title}</div>
+                    <div class='small text-muted'>${category.description}</div>
+                  </div>
+                  <i class='bi bi-chevron-${expandedCategory === catKey ? 'up' : 'down'} fs-5'></i>
+                </div>
+                <div class='collapse${expandedCategory === catKey ? ' show' : ''}' id='cat-${catKey}'>
+                  <div class='card-body'>
+                    ${category.exercises.map(ex => `
+                      <div class='mb-4 border-bottom pb-3'>
+                        <div class='row'>
+                          <div class='col-md-3 mb-2 mb-md-0'>
+                            <img src='${ex.image}' alt='${ex.name}' class='img-fluid rounded shadow-sm' style='height:120px;object-fit:cover;'>
+                          </div>
+                          <div class='col-md-9'>
+                            <div class='d-flex justify-content-between align-items-start'>
+                              <div>
+                                <div class='fw-bold'>${ex.name}</div>
+                                <div class='small text-muted mb-1'>${ex.description}</div>
+                              </div>
+                              <div class='text-end'>
+                                <span class='badge bg-primary me-1'>${ex.difficulty}</span>
+                                <span class='badge bg-danger me-1'><i class='bi bi-fire me-1'></i>${ex.caloriesBurned} cal</span>
+                                <span class='badge bg-secondary'>${ex.duration}</span>
+                              </div>
+                            </div>
+                            <div class='mt-2'>
+                              ${ex.muscleGroups.map(g => `<span class='badge bg-info text-dark me-1 mb-1'>${g}</span>`).join('')}
+                            </div>
+                            <div class='mt-2'>
+                              <button class='btn btn-outline-primary btn-sm me-2' onclick='toggleExercise("${ex.id}")'>${expandedExercise === ex.id ? 'Hide Details' : 'Show Details'}</button>
+                              <button class='btn btn-outline-success btn-sm' onclick='showLogWorkoutModal(${JSON.stringify(ex).replace(/'/g, "&#39;")})'><i class='bi bi-calendar-check me-1'></i>Log Workout</button>
+                            </div>
+                            <div class='collapse${expandedExercise === ex.id ? ' show' : ''}' id='ex-${ex.id}'>
+                              <div class='row mt-3'>
+                                <div class='col-md-6'>
+                                  <div class='fw-bold mb-2'>Instructions</div>
+                                  <ol class='ps-3'>${ex.instructions.map((ins, i) => `<li>${ins}</li>`).join('')}</ol>
+                                </div>
+                                <div class='col-md-6'>
+                                  <div class='fw-bold mb-2'>Variations</div>
+                                  <ul class='ps-3'>${ex.variations.map(v => `<li>${v}</li>`).join('')}</ul>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              </div>`;
+            });
+          });
+          document.getElementById('exercisePlansCategories').innerHTML = html;
+          renderWeeklyPlan();
+        }
+        function toggleCategory(catKey) {
+          expandedCategory = expandedCategory === catKey ? null : catKey;
+          expandedExercise = null;
+          renderExercisePlans();
+        }
+        function toggleExercise(exId) {
+          expandedExercise = expandedExercise === exId ? null : exId;
+          renderExercisePlans();
+        }
+        function renderWeeklyPlan() {
+          const plan = {
+            beginner: [
+              ['Monday', 'Strength', '30-45 min', 'Bodyweight basics'],
+              ['Tuesday', 'Cardio', '20-30 min', 'Walking or stationary bike'],
+              ['Wednesday', 'Active Recovery', '20-30 min', 'Light walking, yoga, or stretching'],
+              ['Thursday', 'Strength', '30-45 min', 'Bodyweight basics (different exercises)'],
+              ['Friday', 'Cardio', '20-30 min', 'Walking or light cardio'],
+              ['Saturday', 'Flexibility', '15-30 min', 'Basic stretches'],
+              ['Sunday', 'Rest', '-', 'Complete rest or very light activity like walking']
+            ],
+            intermediate: [
+              ['Monday', 'Strength', '30-45 min', 'Intermediate strength training'],
+              ['Tuesday', 'Cardio', '20-30 min', 'Moderate intensity cardio'],
+              ['Wednesday', 'Active Recovery', '20-30 min', 'Light walking, yoga, or stretching'],
+              ['Thursday', 'Strength', '30-45 min', 'Intermediate strength training (different exercises)'],
+              ['Friday', 'Cardio', '20-30 min', 'Moderate intensity cardio'],
+              ['Saturday', 'Flexibility', '15-30 min', 'Intermediate flexibility training'],
+              ['Sunday', 'Rest', '-', 'Complete rest or very light activity like walking']
+            ],
+            advanced: [
+              ['Monday', 'Strength', '30-45 min', 'Advanced strength training'],
+              ['Tuesday', 'Cardio', '20-30 min', 'High-intensity cardio'],
+              ['Wednesday', 'Active Recovery', '20-30 min', 'Light walking, yoga, or stretching'],
+              ['Thursday', 'Strength', '30-45 min', 'Advanced strength training (different exercises)'],
+              ['Friday', 'Cardio', '20-30 min', 'High-intensity cardio'],
+              ['Saturday', 'Flexibility', '15-30 min', 'Advanced flexibility training'],
+              ['Sunday', 'Rest', '-', 'Complete rest or very light activity like walking']
+            ]
+          };
+          const focusIcons = {
+            'Strength': '<span class="badge bg-primary"><i class="bi bi-barbell"></i> Strength</span>',
+            'Cardio': '<span class="badge bg-danger"><i class="bi bi-heart-pulse"></i> Cardio</span>',
+            'Active Recovery': '<span class="badge bg-success"><i class="bi bi-emoji-smile"></i> Active Recovery</span>',
+            'Flexibility': '<span class="badge bg-info text-dark"><i class="bi bi-arrow-repeat"></i> Flexibility</span>',
+            'Rest': '<span class="badge bg-secondary"><i class="bi bi-moon"></i> Rest</span>'
+          };
+          let rows = '';
+          (plan[selectedLevel] || []).forEach(([day, focus, duration, rec]) => {
+            rows += `<tr>
+              <td>${day}</td>
+              <td>${focusIcons[focus] || focus}</td>
+              <td>${duration}</td>
+              <td>${rec}</td>
+            </tr>`;
+          });
+          document.getElementById('weeklyPlanTable').innerHTML = rows;
+        }
+        document.getElementById('levelBeginner').onclick = function() { selectedLevel = 'beginner'; expandedCategory = null; expandedExercise = null; renderExercisePlans(); };
+        document.getElementById('levelIntermediate').onclick = function() { selectedLevel = 'intermediate'; expandedCategory = null; expandedExercise = null; renderExercisePlans(); };
+        document.getElementById('levelAdvanced').onclick = function() { selectedLevel = 'advanced'; expandedCategory = null; expandedExercise = null; renderExercisePlans(); };
+        window.toggleCategory = toggleCategory;
+        window.toggleExercise = toggleExercise;
+        renderExercisePlans();
+
+        // --- Log Workout Modal Logic ---
+        function showLogWorkoutModal(exercise) {
+          exerciseToLog = exercise;
+          // Fill modal body with exercise details
+          document.getElementById('logWorkoutModalBody').innerHTML = `
+            <div class='mb-2'><strong>${exercise.name}</strong></div>
+            <div class='mb-2 text-muted'>${exercise.description}</div>
+            <div class='mb-2'><span class='badge bg-danger'><i class='bi bi-fire me-1'></i>${exercise.caloriesBurned} cal</span> <span class='badge bg-secondary'>${exercise.duration}</span></div>
+            <div class='mb-2'>
+              <label for='logDuration' class='form-label mb-1'>Duration (min)</label>
+              <input type='number' id='logDuration' class='form-control' value='${parseInt(exercise.duration)}' min='1' max='300'>
+            </div>
+            <div class='mb-2'>
+              <label for='logCalories' class='form-label mb-1'>Calories Burned</label>
+              <input type='number' id='logCalories' class='form-control' value='${parseInt(exercise.caloriesBurned)}' min='0' max='2000'>
+            </div>
+          `;
+          // Show modal
+          var logModal = new bootstrap.Modal(document.getElementById('logWorkoutModal'));
+          logModal.show();
+        }
+
+        // Confirm button logic
+        if (document.getElementById('confirmLogWorkoutBtn')) {
+          document.getElementById('confirmLogWorkoutBtn').onclick = function() {
+            if (!exerciseToLog) return;
+            const duration = document.getElementById('logDuration').value || parseInt(exerciseToLog.duration);
+            const calories = document.getElementById('logCalories').value || parseInt(exerciseToLog.caloriesBurned);
+
+            // Use the selected date in Your Progress, or today if not set
+            var logDate = typeof progressSelectedDate !== 'undefined' ? progressSelectedDate : new Date().toISOString().split('T')[0];
+
+            // Add to Your Progress section
+            if (typeof progressData !== 'undefined') {
+              if (!progressData.workouts[logDate]) progressData.workouts[logDate] = [];
+              progressData.workouts[logDate].push({
+                type: exerciseToLog.name,
+                duration: parseInt(duration),
+                caloriesBurned: parseInt(calories)
+              });
+              // Update Your Progress UI
+              if (typeof renderProgressLogs === 'function') renderProgressLogs();
+              if (typeof renderProgressCalendar === 'function') renderProgressCalendar();
+              // Show the Your Progress toast
+              if (document.getElementById('progressSuccessToast')) {
+                document.getElementById('progressSuccessMsg').textContent = 'Workout logged successfully!';
+                var toast = new bootstrap.Toast(document.getElementById('progressSuccessToast'));
+                toast.show();
+              }
+            }
+
+            // Optionally, also add to trackingData for legacy support
+            if (typeof trackingData !== 'undefined') {
+              if (!trackingData.workouts[logDate]) trackingData.workouts[logDate] = [];
+              trackingData.workouts[logDate].push({
+                type: exerciseToLog.name,
+                duration: duration,
+                calories: calories
+              });
+              if (typeof renderTracking === 'function') renderTracking();
+            }
+
+            // Close modal
+            var logModal = bootstrap.Modal.getInstance(document.getElementById('logWorkoutModal'));
+            if (logModal) logModal.hide();
+            exerciseToLog = null;
+          };
+        }
+      </script>
+
+    </div>
+
+<!-- Feedback & Issues Section -->
+<div class="dashboard-card p-4 mb-4" style="background: linear-gradient(to right, #fffbe6, #fef9f3); border-left: 6px solid #ffc107;">
+  <div class="text-center mb-4">
+    <h2 class="h4 fw-bold text-warning mb-2"><i class="bi bi-chat-left-dots-fill me-2"></i>Feedback & Issues</h2>
+    <p class="text-muted">Share your thoughts, report bugs, or suggest features to help us improve your experience!</p>
+  </div>
+  <form id="feedbackForm" class="bg-white p-4 rounded shadow-sm border mb-4">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Type</label>
+        <select class="form-select" id="feedbackType" required>
+          <option value="general" selected>General</option>
+          <option value="feature">Feature</option>
+          <option value="bug">Bug</option>
+        </select>
+      </div>
+      <div class="col-md-8">
+        <label class="form-label">Title</label>
+        <input type="text" id="feedbackTitle" class="form-control" placeholder="Feedback title..." required>
+      </div>
+    </div>
+    <div class="mt-3">
+      <label class="form-label">Description</label>
+      <textarea id="feedbackDescription" class="form-control" rows="4" placeholder="Describe your feedback or issue..." required></textarea>
+    </div>
+    <div class="text-end mt-3">
+      <button type="submit" class="btn btn-warning"><i class="bi bi-send me-1"></i>Submit</button>
+    </div>
+  </form>
+
+  <div>
+    <h5 class="mb-3"><i class="bi bi-megaphone-fill text-warning me-2"></i>Recent Feedback</h5>
+    <div id="feedbackList" class="list-group"></div>
+  </div>
+</div>
+
+<script>
+  const feedbacks = [];
+
+  document.getElementById('feedbackForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const type = document.getElementById('feedbackType').value;
+    const title = document.getElementById('feedbackTitle').value.trim();
+    const description = document.getElementById('feedbackDescription').value.trim();
+
+    if (title && description) {
+      const feedback = {
+        type,
+        title,
+        description,
+        date: new Date().toLocaleDateString(),
+        id: Date.now()
+      };
+
+      feedbacks.unshift(feedback);
+      renderFeedbacks();
+      this.reset();
+    }
+  });
+
+  function renderFeedbacks() {
+    const list = document.getElementById('feedbackList');
+    list.innerHTML = '';
+
+    feedbacks.forEach(fb => {
+      const icon = fb.type === 'bug' ? 'bi-bug-fill text-danger' : fb.type === 'feature' ? 'bi-stars text-primary' : 'bi-chat-left-dots text-info';
+      const badgeColor = fb.type === 'bug' ? 'danger' : fb.type === 'feature' ? 'primary' : 'info';
+
+      const item = document.createElement('div');
+      item.className = 'list-group-item list-group-item-action flex-column align-items-start shadow-sm rounded mb-2';
+      item.innerHTML = `
+        <div class="d-flex w-100 justify-content-between">
+          <h6 class="mb-1 text-${badgeColor}"><i class="bi ${icon} me-2"></i>${fb.title}</h6>
+          <small class="text-muted">${fb.date}</small>
+        </div>
+        <p class="mb-1 text-muted">${fb.description}</p>
+        <span class="badge bg-${badgeColor}">${fb.type}</span>
+      `;
+      list.appendChild(item);
+    });
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+    <%- include('partials/footer') %>
+      <!-- Bootstrap JS -->
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

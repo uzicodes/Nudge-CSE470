@@ -1,0 +1,49 @@
+<html>
+
+<head>
+  <!-- <link rel="stylesheet" href="/css/styles.css"> -->
+
+</head>
+
+<body>
+  <%- include('partials/navbar') %>
+
+    <h1>Admin Panel – User Requests</h1>
+
+    <% if (requests.length===0) { %>
+      <p>No requests available at the moment.</p>
+      <% } else { %>
+        <% requests.forEach(req=> { %>
+          <div style="border: 1px solid #ccc; padding: 1rem; margin: 1rem; border-radius: 8px;">
+            <p><strong>Name:</strong>
+              <%= req.name %>
+            </p>
+            <p><strong>Email:</strong>
+              <%= req.email %>
+            </p>
+            <p><strong>Age:</strong>
+              <%= req.age %> | <strong>Height:</strong>
+                <%= req.height %> cm
+            </p>
+            <p><strong>Weight:</strong>
+              <%= req.weight %> kg | <strong>Goal Weight:</strong>
+                <%= req.goal_weight %> kg
+            </p>
+            <p><strong>Meal Plan Requested:</strong>
+              <%= req.meal_plan_requested ? 'Yes' : 'No' %>
+            </p>
+            <p><strong>Exercise Suggestion Requested:</strong>
+              <%= req.exercise_suggestion_requested ? 'Yes' : 'No' %>
+            </p>
+
+            <form action="/admin/requests/<%= req.id %>/resolve" method="POST"
+              onsubmit="return confirm('Mark this request as resolved?');">
+              <button type="submit">✅ Resolve</button>
+            </form>
+          </div>
+          <% }) %>
+            <% } %>
+
+</body>
+
+</html>

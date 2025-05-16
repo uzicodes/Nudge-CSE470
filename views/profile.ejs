@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - Nudge</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <style>
+    body { background-color: #f0f8ff; min-height: 100vh; }
+    .profile-card { max-width: 600px; margin: 2rem auto; border-radius: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+    .profile-header {
+      background: linear-gradient(135deg, #0d6efd 0%, #0853c5 100%);
+      color: white; padding: 3rem 0; margin-bottom: 2rem;
+    }
+    .form-label { font-weight: 600; color: #2c3e50; }
+    .btn-primary {
+      background-color: #007bff; border: none;
+      padding: 10px 20px; transition: all 0.3s ease;
+    }
+    .btn-primary:hover { background-color: #0056b3; transform: translateY(-1px); }
+    .delete-btn { background-color: #dc3545; color: white; transition: all 0.3s ease; }
+    .delete-btn:hover { background-color: #bb2d3b; color: white; }
+    input.form-control:focus {
+      border-color: #007bff;
+      box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+    .profile-avatar {
+      width: 150px; height: 150px; border-radius: 50%;
+      background: #e9ecef; display: flex; align-items: center;
+      justify-content: center; font-size: 4rem; color: #6c757d;
+      margin: 0 auto 1rem;
+    }
+  </style>
+</head>
+<body class="bg-light">
+  <%- include('partials/navbar') %>
+
+  <div class="profile-header">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-md-3 text-center">
+          <div class="profile-avatar">
+            <i class="bi bi-person-circle"></i>
+          </div>
+        </div>
+        <div class="col-md-9">
+          <h1 class="display-5 mb-2"><%= user.name %></h1>
+          <p class="lead mb-1"><%= user.email %></p>
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <% if (user.dob) { %>
+              <span class="badge rounded-pill bg-light text-dark border"><i class="bi bi-calendar me-1"></i> DOB: <%= user.dob %></span>
+            <% } %>
+            <% if (user.gender) { %>
+              <span class="badge rounded-pill bg-light text-dark border"><i class="bi bi-gender-ambiguous me-1"></i> Gender: <%= user.gender %></span>
+            <% } %>
+            <% if (user.age) { %>
+              <span class="badge rounded-pill bg-light text-dark border"><i class="bi bi-person me-1"></i> Age: <%= user.age %></span>
+            <% } %>
+            <% if (user.weight) { %>
+              <span class="badge rounded-pill bg-light text-dark border"><i class="bi bi-bar-chart me-1"></i> Weight: <%= user.weight %> lbs</span>
+            <% } %>
+            <% if (user.height) { %>
+              <span class="badge rounded-pill bg-light text-dark border"><i class="bi bi-arrows-expand me-1"></i> Height: <%= user.height %> in</span>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container py-4">
+    <div class="row g-4">
+      <div class="col-md-8">
+        <div class="profile-card p-4 mb-4">
+          <h3 class="mb-4">Profile Information</h3>
+          <form action="/profile/update" method="POST">
+            <div class="row g-3">
+              <div class="col-md-6"><label for="name" class="form-label">Full Name</label><input type="text" class="form-control" id="name" name="name" value="<%= user.name %>" required></div>
+              <div class="col-md-6"><label for="email" class="form-label">Email</label><input type="email" class="form-control" id="email" name="email" value="<%= user.email %>" required></div>
+              <div class="col-md-6"><label for="age" class="form-label">Age</label><input type="number" class="form-control" id="age" name="age" value="<%= user.age || '' %>" min="0"></div>
+              <div class="col-md-6"><label for="dob" class="form-label">Date of Birth</label><input type="date" class="form-control" id="dob" name="dob" value="<%= user.dob || '' %>"></div>
+              <div class="col-md-6"><label for="weight" class="form-label">Weight (lbs)</label><input type="number" class="form-control" id="weight" name="weight" value="<%= user.weight || '' %>" min="0" step="0.1"></div>
+              <div class="col-md-6"><label for="height" class="form-label">Height (inches)</label><input type="number" class="form-control" id="height" name="height" value="<%= user.height || '' %>" min="0" step="0.1"></div>
+              <div class="col-md-6">
+                <label for="gender" class="form-label">Gender</label>
+                <select class="form-select" id="gender" name="gender">
+                  <option value="" <%= !user.gender ? 'selected' : '' %>>Select Gender</option>
+                  <option value="Male" <%= user.gender === 'Male' ? 'selected' : '' %>>Male</option>
+                  <option value="Female" <%= user.gender === 'Female' ? 'selected' : '' %>>Female</option>
+                  <option value="Other" <%= user.gender === 'Other' ? 'selected' : '' %>>Other</option>
+                </select>
+              </div>
+              <div class="col-12"><button type="submit" class="btn btn-primary">Update Details</button></div>
+            </div>
+          </form>
+        </div>
+
+        <div class="profile-card p-4">
+          <h3 class="mb-4">Change Password</h3>
+          <form action="/profile/change-password" method="POST">
+            <div class="row g-3">
+              <div class="col-md-12"><label for="currentPassword" class="form-label">Current Password</label><input type="password" class="form-control" id="currentPassword" name="currentPassword" required></div>
+              <div class="col-md-6"><label for="newPassword" class="form-label">New Password</label><input type="password" class="form-control" id="newPassword" name="newPassword" required></div>
+              <div class="col-md-6"><label for="confirmPassword" class="form-label">Confirm New Password</label><input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required></div>
+              <div class="col-12"><button type="submit" class="btn btn-primary">Change Password</button></div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="profile-card p-4">
+          <h3 class="mb-4">Your Stats</h3>
+          <div class="row g-3">
+            <div class="col-6">
+              <a href="/dashboard" class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center">
+                <i class="bi bi-calendar-check display-6 mb-2"></i>
+                <span class="fw-semibold">Days Active</span>
+              </a>
+            </div>
+            <div class="col-6">
+              <a href="/dashboard" class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center">
+                <i class="bi bi-clipboard2-check display-6 mb-2"></i>
+                <span class="fw-semibold">Goals Set</span>
+              </a>
+            </div>
+            <div class="col-6">
+              <a href="/dashboard" class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center">
+                <i class="bi bi-trophy display-6 mb-2"></i>
+                <span class="fw-semibold">Achievements</span>
+              </a>
+            </div>
+            <div class="col-6">
+              <a href="/dashboard" class="btn btn-outline-primary w-100 py-3 d-flex flex-column align-items-center">
+                <i class="bi bi-graph-up display-6 mb-2"></i>
+                <span class="fw-semibold">Progress</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%- include('partials/footer') %>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - Nudge</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <style>
+    .health-card {
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s;
+      border: none;
+    }
+
+    .health-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .stat-icon {
+      font-size: 2.5rem;
+      color: #0d6efd;
+    }
+
+    .bmi-category {
+      font-weight: 500;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+    }
+
+    .calculator-form {
+      background: white;
+      border-radius: 15px;
+      padding: 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .bmi-indicator.bmi-normal { background: #d4edda; color: #155724; }
+    .bmi-indicator.bmi-underweight { background: #b3e0ff; color: #005c99; }
+    .bmi-indicator.bmi-overweight { background: #fff3cd; color: #856404; }
+    .bmi-indicator.bmi-obese { background: #f8d7da; color: #721c24; }
+  </style>
+</head>
+
+<body class="bg-light">
+  <%- include('partials/navbar') %>
+
+    <div class="container py-5">
+    <h1 class="text-center mb-4">
+      <i class="bi bi-heart-pulse-fill text-primary me-2"></i>
+      <%= title %>
+    </h1>
+
+    <% if (calculator === 'bmi') { %>
+      <!-- BMI Calculator Form -->
+      <div class="row justify-content-center">
+        <div class="col-md-6">
+          <div class="calculator-form">
+            <h3 class="mb-4">Calculate Your BMI</h3>
+            <% if (bmi && bmiCategory) { %>
+              <div class="mb-4">
+                <div class="card shadow-sm" style="border-radius: 18px;">
+                  <div class="card-body text-center">
+                    <div style="font-size:2.5rem;font-weight:bold;">
+                      <%= bmi %>
+                    </div>
+                    <div class="bmi-indicator <%=
+                      bmiCategory.toLowerCase().includes('normal') ? 'bmi-normal' :
+                      bmiCategory.toLowerCase().includes('underweight') ? 'bmi-underweight' :
+                      bmiCategory.toLowerCase().includes('overweight') ? 'bmi-overweight' :
+                      'bmi-obese' %>" style="display:inline-block;padding:0.5rem 1.5rem;border-radius:20px;font-size:1.2rem;font-weight:600;margin-top:1rem;">
+                      <%= bmiCategory %>
+                    </div>
+                    <div class="mt-3">
+                      <% if (bmi < 18.5) { %>
+                        <span style="color:#005c99;">You are under the normal weight range. Consider consulting a healthcare provider.</span>
+                      <% } else if (bmi < 25) { %>
+                        <span style="color:#155724;">You are in the healthy weight range. Keep up the good work!</span>
+                      <% } else if (bmi < 30) { %>
+                        <span style="color:#856404;">You are above the normal weight range. Consider a balanced diet and regular exercise.</span>
+                      <% } else { %>
+                        <span style="color:#721c24;">You are in the obese range. It is recommended to consult a healthcare provider.</span>
+                      <% } %>
+                    </div>
+                  </div>
+                </div>
+                <div class="d-flex justify-content-between mt-3" style="font-size:0.95rem;">
+                  <span class="scale-underweight" style="background:#b3e0ff;padding:0.5rem 1rem;border-radius:10px;">Underweight<br>&lt; 18.5</span>
+                  <span class="scale-normal" style="background:#d4edda;padding:0.5rem 1rem;border-radius:10px;">Normal<br>18.5 - 24.9</span>
+                  <span class="scale-overweight" style="background:#fff3cd;padding:0.5rem 1rem;border-radius:10px;">Overweight<br>25 - 29.9</span>
+                  <span class="scale-obese" style="background:#f8d7da;padding:0.5rem 1rem;border-radius:10px;">Obese<br>30+</span>
+                </div>
+              </div>
+              <div class="text-center mt-4">
+                <button id="showMealPlanBtn" type="button" class="btn btn-success btn-lg" data-bmi="<%= bmi %>">Do you want a Meal Plan?</button>
+              </div>
+              <div id="mealPlanSection" class="mt-4" style="display:none;"></div>
+              <div class="text-center mt-3">
+                <button id="showExerciseBtn" type="button" class="btn btn-primary btn-lg" data-bmi="<%= bmi %>">Request Exercise Suggestions</button>
+              </div>
+              <div id="exerciseSection" class="mt-4" style="display:none;"></div>
+            <% } %>
+            <form action="/health/calculators/bmi" method="POST">
+              <div class="mb-3">
+                <label for="weight" class="form-label">Weight (kg)</label>
+                <input type="number" class="form-control" id="weight" name="weight" required step="0.1" min="0">
+              </div>
+              <div class="mb-3">
+                <label for="height" class="form-label">Height (cm)</label>
+                <input type="number" class="form-control" id="height" name="height" required step="0.1" min="0">
+              </div>
+              <button type="submit" class="btn btn-primary w-100">Calculate BMI</button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <script>
+        document.addEventListener('DOMContentLoaded', function() {
+          var btn = document.getElementById('showMealPlanBtn');
+          if (btn) {
+            btn.onclick = function() {
+              var bmi = parseFloat(btn.getAttribute('data-bmi'));
+              var mealPlanHtml = `
+                <div class='d-flex justify-content-center mb-3'>
+                  <div class='text-center mx-2'>
+                    <img src='https://images.pexels.com/photos/376464/pexels-photo-376464.jpeg?w=120&h=120&fit=crop' alt='Breakfast' class='img-fluid rounded-circle mb-1' style='width:70px;height:70px;object-fit:cover;'>
+                    <div style='font-weight:600;'>Breakfast</div>
+                  </div>
+                  <div class='text-center mx-2'>
+                    <img src='https://images.pexels.com/photos/461382/pexels-photo-461382.jpeg?w=120&h=120&fit=crop' alt='Lunch' class='img-fluid rounded-circle mb-1' style='width:70px;height:70px;object-fit:cover;'>
+                    <div style='font-weight:600;'>Lunch</div>
+                  </div>
+                  <div class='text-center mx-2'>
+                    <img src='https://images.pexels.com/photos/70497/pexels-photo-70497.jpeg?w=120&h=120&fit=crop' alt='Dinner' class='img-fluid rounded-circle mb-1' style='width:70px;height:70px;object-fit:cover;'>
+                    <div style='font-weight:600;'>Dinner</div>
+                  </div>
+                </div>`;
+              if (bmi < 18.5) {
+                mealPlanHtml += `
+                  <div class='card border-info mb-3'>
+                    <div class='card-header bg-info text-white'>Meal Plan for Underweight</div>
+                    <div class='card-body'>
+                      <ul class='list-group mb-3'>
+                        <li class='list-group-item'><b>Breakfast:</b> 2 slices peanut butter toast, 1 banana, 1 cup whole milk</li>
+                        <li class='list-group-item'><b>Lunch:</b> 1 grilled chicken sandwich, 1/2 avocado, 1 cup salad, 1 glass fruit juice</li>
+                        <li class='list-group-item'><b>Dinner:</b> 1 cup rice, 1 cup lentils, 1 cup paneer curry, 1 cup mixed veggies, 1/2 cup yogurt</li>
+                      </ul>
+                      <div class='alert alert-info'><b>Tips:</b> Eat calorie-dense foods, add healthy snacks, and consult a nutritionist for a personalized plan.</div>
+                    </div>
+                  </div>`;
+              } else if (bmi < 25) {
+                mealPlanHtml += `
+                  <div class='card border-success mb-3'>
+                    <div class='card-header bg-success text-white'>Meal Plan for Normal BMI</div>
+                    <div class='card-body'>
+                      <ul class='list-group mb-3'>
+                        <li class='list-group-item'><b>Breakfast:</b> 1 bowl oatmeal with berries, 1 boiled egg, 1 cup green tea</li>
+                        <li class='list-group-item'><b>Lunch:</b> 100g grilled fish or tofu, 1 cup brown rice, 1 cup steamed vegetables</li>
+                        <li class='list-group-item'><b>Dinner:</b> 2 whole wheat rotis, 1 cup dal, 1 cup sautéed greens, 1 cup salad</li>
+                      </ul>
+                      <div class='alert alert-success'><b>Tips:</b> Maintain a balanced diet, stay active, and keep hydrated!</div>
+                    </div>
+                  </div>`;
+              } else if (bmi < 30) {
+                mealPlanHtml += `
+                  <div class='card border-warning mb-3'>
+                    <div class='card-header bg-warning text-dark'>Meal Plan for Overweight</div>
+                    <div class='card-body'>
+                      <ul class='list-group mb-3'>
+                        <li class='list-group-item'><b>Breakfast:</b> 1 cup Greek yogurt, 1 apple, 10-12 nuts</li>
+                        <li class='list-group-item'><b>Lunch:</b> 1 bowl grilled chicken salad, 2 tbsp vinaigrette, 1 glass water</li>
+                        <li class='list-group-item'><b>Dinner:</b> 1 cup stir-fried veggies, 100g tofu, 1/2 cup brown rice</li>
+                      </ul>
+                      <div class='alert alert-warning'><b>Tips:</b> Watch portion sizes, limit sugary drinks, and increase fiber intake.</div>
+                    </div>
+                  </div>`;
+              } else {
+                mealPlanHtml += `
+                  <div class='card border-danger mb-3'>
+                    <div class='card-header bg-danger text-white'>Meal Plan for Obese</div>
+                    <div class='card-body'>
+                      <ul class='list-group mb-3'>
+                        <li class='list-group-item'><b>Breakfast:</b> 2-egg vegetable omelette, 2 tomato slices, 1 cup herbal tea</li>
+                        <li class='list-group-item'><b>Lunch:</b> 1 bowl lentil soup, 1 cup mixed salad, 1 glass lemon water</li>
+                        <li class='list-group-item'><b>Dinner:</b> 100g grilled fish or tofu, 1 cup steamed broccoli, 1/2 cup carrot sticks</li>
+                      </ul>
+                      <div class='alert alert-danger'><b>Tips:</b> Focus on low-calorie, nutrient-rich foods, avoid fried foods, and consult a healthcare provider for a tailored plan.</div>
+                    </div>
+                  </div>`;
+              }
+              document.getElementById('mealPlanSection').innerHTML = mealPlanHtml;
+              document.getElementById('mealPlanSection').style.display = '';
+              btn.style.display = 'none';
+            };
+          }
+          var exerciseBtn = document.getElementById('showExerciseBtn');
+          if (exerciseBtn) {
+            exerciseBtn.onclick = function() {
+              var bmi = parseFloat(exerciseBtn.getAttribute('data-bmi'));
+              var exerciseData = {
+                underweight: [
+                  {
+                    type: 'Cardio',
+                    exercises: [
+                      {
+                        name: 'Brisk Walking',
+                        image: 'https://images.pexels.com/photos/4149014/pexels-photo-4149014.jpeg?w=120&h=120&fit=crop',
+                        description: 'Gentle, low-impact cardio to build endurance.',
+                        duration: '20-30 min',
+                        calories: 150,
+                        difficulty: 'Beginner',
+                        muscleGroups: ['Lower Body', 'Core'],
+                        instructions: [
+                          'Start with a 5-minute warm-up at a casual pace.',
+                          'Increase to a brisk pace where you can still talk but feel slightly breathless.',
+                          'Walk heel-to-toe and engage your core.',
+                          'Finish with a 5-minute cool-down.'
+                        ],
+                        variations: [
+                          'Add incline by walking uphill.',
+                          'Try intervals of faster walking.'
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    type: 'Strength',
+                    exercises: [
+                      {
+                        name: 'Light Strength Training',
+                        image: 'https://images.pexels.com/photos/3823039/pexels-photo-3823039.jpeg?w=120&h=120&fit=crop',
+                        description: 'Bodyweight or light dumbbell exercises to build muscle.',
+                        duration: '15-20 min',
+                        calories: 80,
+                        difficulty: 'Beginner',
+                        muscleGroups: ['Full Body'],
+                        instructions: [
+                          'Perform squats, push-ups (knee or wall), and lunges.',
+                          'Do 2-3 sets of 10-12 reps each.'
+                        ],
+                        variations: [
+                          'Increase reps as you get stronger.',
+                          'Add light weights for more challenge.'
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    type: 'Flexibility',
+                    exercises: [
+                      {
+                        name: 'Yoga or Pilates',
+                        image: 'https://images.pexels.com/photos/317157/pexels-photo-317157.jpeg?w=120&h=120&fit=crop',
+                        description: 'Gentle stretching and balance work.',
+                        duration: '10-15 min',
+                        calories: 40,
+                        difficulty: 'Beginner',
+                        muscleGroups: ['Core', 'Flexibility'],
+                        instructions: [
+                          'Follow a beginner yoga or pilates video.',
+                          'Focus on breathing and gentle movement.'
+                        ],
+                        variations: [
+                          'Try different beginner routines.'
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                normal: [
+                  {
+                    type: 'Cardio',
+                    exercises: [
+                      {
+                        name: 'Jogging',
+                        image: 'https://images.pexels.com/photos/3764013/pexels-photo-3764013.jpeg?w=120&h=120&fit=crop',
+                        description: 'Moderate-intensity cardio for heart health.',
+                        duration: '20-30 min',
+                        calories: 250,
+                        difficulty: 'Intermediate',
+                        muscleGroups: ['Lower Body', 'Core'],
+                        instructions: [
+                          'Warm up with 5 minutes of walking.',
+                          'Jog at a steady pace for 15-20 minutes.',
+                          'Cool down with 5 minutes of walking.'
+                        ],
+                        variations: [
+                          'Try interval jogging (alternate fast/slow).'
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    type: 'Strength',
+                    exercises: [
+                      {
+                        name: 'Bodyweight Circuit',
+                        image: 'https://images.pexels.com/photos/4162599/pexels-photo-4162599.jpeg?w=120&h=120&fit=crop',
+                        description: 'Push-ups, squats, lunges, and planks.',
+                        duration: '20-25 min',
+                        calories: 120,
+                        difficulty: 'Intermediate',
+                        muscleGroups: ['Full Body'],
+                        instructions: [
+                          'Do 3 rounds: 10 push-ups, 15 squats, 10 lunges/leg, 30s plank.',
+                          'Rest 1 min between rounds.'
+                        ],
+                        variations: [
+                          'Add jump squats or mountain climbers.'
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    type: 'Flexibility',
+                    exercises: [
+                      {
+                        name: 'Yoga Flow',
+                        image: 'https://images.pexels.com/photos/3822906/pexels-photo-3822906.jpeg?w=120&h=120&fit=crop',
+                        description: 'A sequence of yoga poses for flexibility.',
+                        duration: '15-20 min',
+                        calories: 50,
+                        difficulty: 'Intermediate',
+                        muscleGroups: ['Flexibility', 'Core'],
+                        instructions: [
+                          'Follow a 15-min yoga flow video.',
+                          'Hold each pose for 20-30 seconds.'
+                        ],
+                        variations: [
+                          'Try sun salutations or vinyasa flows.'
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                overweight: [
+                  {
+                    type: 'Cardio',
+                    exercises: [
+                      {
+                        name: 'Low-Impact Cardio',
+                        image: 'https://images.pexels.com/photos/1199590/pexels-photo-1199590.jpeg?w=120&h=120&fit=crop',
+                        description: 'Walking, cycling, or swimming.',
+                        duration: '20-30 min',
+                        calories: 180,
+                        difficulty: 'Beginner',
+                        muscleGroups: ['Lower Body', 'Cardio'],
+                        instructions: [
+                          'Choose a low-impact activity you enjoy.',
+                          'Aim for 20-30 minutes at a steady pace.'
+                        ],
+                        variations: [
+                          'Try water aerobics for joint support.'
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    type: 'Strength',
+                    exercises: [
+                      {
+                        name: 'Bodyweight Strength',
+                        image: 'https://images.pexels.com/photos/3823039/pexels-photo-3823039.jpeg?w=120&h=120&fit=crop',
+                        description: 'Squats, wall push-ups, and step-ups.',
+                        duration: '15-20 min',
+                        calories: 90,
+                        difficulty: 'Beginner',
+                        muscleGroups: ['Full Body'],
+                        instructions: [
+                          'Do 2 rounds: 10 squats, 10 wall push-ups, 10 step-ups/leg.',
+                          'Rest 1 min between rounds.'
+                        ],
+                        variations: [
+                          'Add resistance bands for more challenge.'
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    type: 'Flexibility',
+                    exercises: [
+                      {
+                        name: 'Stretching Routine',
+                        image: 'https://images.pexels.com/photos/4056723/pexels-photo-4056723.jpeg?w=120&h=120&fit=crop',
+                        description: 'Gentle stretches for mobility.',
+                        duration: '10-15 min',
+                        calories: 30,
+                        difficulty: 'Beginner',
+                        muscleGroups: ['Flexibility'],
+                        instructions: [
+                          'Stretch major muscle groups: hamstrings, quads, shoulders.',
+                          'Hold each stretch for 20-30 seconds.'
+                        ],
+                        variations: [
+                          'Try seated or lying stretches for comfort.'
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                obese: [
+                  {
+                    type: 'Cardio',
+                    exercises: [
+                      {
+                        name: 'Gentle Walking',
+                        image: 'https://images.pexels.com/photos/3757376/pexels-photo-3757376.jpeg?w=120&h=120&fit=crop',
+                        description: 'Short, gentle walks or water aerobics.',
+                        duration: '10-20 min',
+                        calories: 80,
+                        difficulty: 'Beginner',
+                        muscleGroups: ['Lower Body', 'Cardio'],
+                        instructions: [
+                          'Walk at a comfortable pace.',
+                          'Take breaks as needed.'
+                        ],
+                        variations: [
+                          'Try water walking for less joint stress.'
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    type: 'Strength',
+                    exercises: [
+                      {
+                        name: 'Chair Exercises',
+                        image: 'https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg?w=120&h=120&fit=crop',
+                        description: 'Seated marches, leg lifts, and arm raises.',
+                        duration: '10-15 min',
+                        calories: 50,
+                        difficulty: 'Beginner',
+                        muscleGroups: ['Full Body'],
+                        instructions: [
+                          'Sit in a sturdy chair and perform leg lifts, arm raises, and marches.',
+                          'Do 2-3 sets of 10-12 reps each.'
+                        ],
+                        variations: [
+                          'Add light dumbbells for more resistance.'
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    type: 'Flexibility',
+                    exercises: [
+                      {
+                        name: 'Gentle Stretching',
+                        image: 'https://images.pexels.com/photos/4056723/pexels-photo-4056723.jpeg?w=120&h=120&fit=crop',
+                        description: 'Simple stretches for comfort and mobility.',
+                        duration: '5-10 min',
+                        calories: 20,
+                        difficulty: 'Beginner',
+                        muscleGroups: ['Flexibility'],
+                        instructions: [
+                          'Stretch arms, legs, and back gently.',
+                          'Hold each stretch for 15-20 seconds.'
+                        ],
+                        variations: [
+                          'Try stretching in bed or seated.'
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              };
+              var bmiCategory = (bmi < 18.5) ? 'underweight' : (bmi < 25) ? 'normal' : (bmi < 30) ? 'overweight' : 'obese';
+              var exHtml = '';
+              exerciseData[bmiCategory].forEach(function(group, idx) {
+                exHtml += `<div class='mb-4'><h5 class='mb-2 text-primary'>${group.type}</h5>`;
+                group.exercises.forEach(function(ex, i) {
+                  var exId = 'ex' + idx + '_' + i;
+                  exHtml += `
+                    <div class='card mb-3 shadow-sm'>
+                      <div class='row g-0'>
+                        <div class='col-3 d-flex align-items-center justify-content-center'>
+                          <img src='${ex.image}' alt='${ex.name}' class='img-fluid rounded-circle' style='width:70px;height:70px;object-fit:cover;'>
+                        </div>
+                        <div class='col-9'>
+                          <div class='card-body pb-2 pt-3'>
+                            <div class='d-flex justify-content-between align-items-start'>
+                              <div>
+                                <h6 class='card-title mb-1'>${ex.name}</h6>
+                                <span class='badge bg-secondary me-1'>${ex.difficulty}</span>
+                                <span class='badge bg-info text-dark me-1'>${ex.duration}</span>
+                                <span class='badge bg-danger me-1'>${ex.calories} kcal</span>
+                                ${ex.muscleGroups.map(mg => `<span class='badge bg-success me-1'>${mg}</span>`).join('')}
+                              </div>
+                              <button class='btn btn-link btn-sm text-decoration-none' type='button' onclick="document.getElementById('${exId}').classList.toggle('d-none')">Details</button>
+                            </div>
+                            <div class='text-muted small mt-2'>${ex.description}</div>
+                            <div id='${exId}' class='d-none mt-3'>
+                              <b>Instructions:</b>
+                              <ul class='mb-2'>${ex.instructions.map(ins => `<li>${ins}</li>`).join('')}</ul>
+                              <b>Variations:</b>
+                              <ul>${ex.variations.map(v => `<li>${v}</li>`).join('')}</ul>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  `;
+                });
+                exHtml += '</div>';
+              });
+              document.getElementById('exerciseSection').innerHTML = exHtml;
+              document.getElementById('exerciseSection').style.display = '';
+              exerciseBtn.style.display = 'none';
+            };
+          }
+        });
+      </script>
+    <% } else if (calculator === 'calories') { %>
+      <!-- Calorie Calculator Form -->
+      <div class="row justify-content-center">
+        <div class="col-md-6">
+          <div class="calculator-form">
+            <h3 class="mb-4">Calculate Your Daily Calories</h3>
+            <form action="/health/calculators/calories" method="POST">
+              <div class="mb-3">
+                <label for="weight" class="form-label">Weight (kg)</label>
+                <input type="number" class="form-control" id="weight" name="weight" required step="0.1">
+              </div>
+              <div class="mb-3">
+                <label for="height" class="form-label">Height (cm)</label>
+                <input type="number" class="form-control" id="height" name="height" required step="0.1">
+              </div>
+              <div class="mb-3">
+                <label for="age" class="form-label">Age</label>
+                <input type="number" class="form-control" id="age" name="age" required>
+              </div>
+              <div class="mb-3">
+                <label for="activity" class="form-label">Activity Level</label>
+                <select class="form-select" id="activity" name="activity" required>
+                  <option value="sedentary">Sedentary</option>
+                  <option value="light">Lightly Active</option>
+                  <option value="moderate">Moderately Active</option>
+                  <option value="very">Very Active</option>
+                  <option value="extra">Extra Active</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-primary w-100">Calculate Calories</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    <% } else if (calculator === 'bodyfat') { %>
+      <!-- Body Fat Calculator Form -->
+      <div class="row justify-content-center">
+        <div class="col-md-6">
+          <div class="calculator-form">
+            <h3 class="mb-4">Calculate Your Body Fat Percentage</h3>
+            <form action="/health/calculators/bodyfat" method="POST">
+              <div class="mb-3">
+                <label for="weight" class="form-label">Weight (kg)</label>
+                <input type="number" class="form-control" id="weight" name="weight" required step="0.1">
+              </div>
+              <div class="mb-3">
+                <label for="height" class="form-label">Height (cm)</label>
+                <input type="number" class="form-control" id="height" name="height" required step="0.1">
+              </div>
+              <div class="mb-3">
+                <label for="waist" class="form-label">Waist Circumference (cm)</label>
+                <input type="number" class="form-control" id="waist" name="waist" required step="0.1">
+              </div>
+              <div class="mb-3">
+                <label for="neck" class="form-label">Neck Circumference (cm)</label>
+                <input type="number" class="form-control" id="neck" name="neck" required step="0.1">
+              </div>
+              <div class="mb-3">
+                <label for="hip" class="form-label">Hip Circumference (cm) - Women only</label>
+                <input type="number" class="form-control" id="hip" name="hip" step="0.1">
+              </div>
+              <button type="submit" class="btn btn-primary w-100">Calculate Body Fat</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    <% } else { %>
+      <!-- Health Statistics Overview -->
+      <div class="row g-4">
+        <!-- BMI Card -->
+        <div class="col-md-4">
+          <div class="health-card p-4 text-center">
+            <i class="bi bi-speedometer2 stat-icon mb-3"></i>
+            <h3 class="h5 mb-3">Body Mass Index (BMI)</h3>
+            <% if (bmi && bmiCategory) { %>
+              <div class="display-5 fw-bold text-primary mb-2">
+                <%= bmi %>
+              </div>
+              <div class="bmi-category d-inline-block 
+                            <%= bmiCategory.toLowerCase().includes('normal') ? 'bg-success' : 
+                                 bmiCategory.toLowerCase().includes('overweight') ? 'bg-warning' : 
+                                 bmiCategory.toLowerCase().includes('obese') ? 'bg-danger' : 'bg-secondary' %> 
+                            text-white">
+                <%= bmiCategory %>
+              </div>
+              <% } else { %>
+                <div class="text-muted py-3">
+                  <i class="bi bi-clipboard-x fs-1"></i>
+                  <p class="mt-2 mb-0">Not calculated yet</p>
+                </div>
+                <% } %>
+            <a href="/health/calculators/bmi" class="btn btn-outline-primary mt-3">Calculate BMI</a>
+          </div>
+        </div>
+
+        <!-- Caloric Needs Card -->
+        <div class="col-md-4">
+          <div class="health-card p-4 text-center">
+            <i class="bi bi-fire stat-icon mb-3"></i>
+            <h3 class="h5 mb-3">Daily Caloric Needs</h3>
+            <% if (caloricNeeds) { %>
+              <div class="display-5 fw-bold text-primary mb-2">
+                <%= caloricNeeds %>
+              </div>
+              <p class="mb-0 text-muted">kcal per day</p>
+              <% } else { %>
+                <div class="text-muted py-3">
+                  <i class="bi bi-clipboard-x fs-1"></i>
+                  <p class="mt-2 mb-0">Not calculated yet</p>
+                </div>
+                <% } %>
+            <a href="/health/calculators/calories" class="btn btn-outline-primary mt-3">Calculate Calories</a>
+          </div>
+        </div>
+
+        <!-- Body Fat Card -->
+        <div class="col-md-4">
+          <div class="health-card p-4 text-center">
+            <i class="bi bi-person-standing stat-icon mb-3"></i>
+            <h3 class="h5 mb-3">Body Fat Percentage</h3>
+            <% if (bodyFat) { %>
+              <div class="display-5 fw-bold text-primary mb-2">
+                <%= bodyFat %>%
+              </div>
+              <p class="mb-0 text-muted">Body Composition</p>
+              <% } else { %>
+                <div class="text-muted py-3">
+                  <i class="bi bi-clipboard-x fs-1"></i>
+                  <p class="mt-2 mb-0">Not calculated yet</p>
+                </div>
+                <% } %>
+            <a href="/health/calculators/bodyfat" class="btn btn-outline-primary mt-3">Calculate Body Fat</a>
+          </div>
+        </div>
+      </div>
+    <% } %>
+    </div>
+
+    <%- include('partials/footer') %>
+
+      <!-- Bootstrap JS -->
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

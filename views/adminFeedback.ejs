@@ -1,0 +1,37 @@
+<html>
+
+<head>
+
+</head>
+
+<body>
+  <%- include('partials/navbar') %>
+
+    <h1>Feedback From Users</h1>
+
+    <% if (feedback.length===0) { %>
+      <p>No feedback submitted yet.</p>
+      <% } else { %>
+        <% feedback.forEach(entry=> { %>
+          <div style="border: 1px solid #ccc; padding: 1rem; margin: 1rem; border-radius: 8px;">
+            <p><strong>Name:</strong>
+              <%= entry.name %> (<%= entry.email %>)
+            </p>
+            <p><strong>Submitted At:</strong>
+              <%= entry.submitted_at.toLocaleString() %>
+            </p>
+            <p><strong>Message:</strong>
+              <%= entry.message %>
+            </p>
+
+            <form action="/admin/feedback/<%= entry.id %>/resolve" method="POST"
+              onsubmit="return confirm('Delete this feedback?');">
+              <button type="submit">✅ Delete</button>
+            </form>
+          </div>
+          <% }) %>
+            <% } %>
+
+</body>
+
+</html>
